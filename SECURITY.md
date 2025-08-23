@@ -1,6 +1,5 @@
 ## SECURITY.md
 
-```markdown
 # Security Policy
 
 ## Support & updates
@@ -22,5 +21,6 @@ Recommendations:
 - Verify the active window before enabling “Write to cursor.”
 - Review your OS microphone permissions.
 - If you prefer offline‑only behavior, disable voice commands by removing/commenting the `start_voice_command_listener()` call in `Voice_To_Text_Assistant.py`.
+
 
 **Use at your own risk.** The maintainers are **not responsible** for any data loss or damage.
