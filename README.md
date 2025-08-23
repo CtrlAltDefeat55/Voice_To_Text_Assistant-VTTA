@@ -18,6 +18,9 @@ A lightweight Tkinter desktop app that records short snippets, transcribes them 
 
 ## 🚀 Quick Start
 
+
+### Firstly, Open a terminal **in the project folder** then:
+
 ### Windows 10/11
 ```powershell
 # 1) Create and activate a virtual environment
