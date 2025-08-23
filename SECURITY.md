@@ -10,17 +10,18 @@ Open an issue and include the word **SECURITY** in the title. Avoid posting sens
 
 ## Risk & behavior disclaimers
 This app:
-- **Records audio** from your microphone while you press a hotkey.
+- **Records audio** from your microphone during dictation (hotkey/button).
 - Can **paste to your active window** using clipboard/keyboard automation (optional).
-- Can **open a web browser** to a search page using Playwright.
+- Can **open a web browser** to a search page using Playwright (when requested).
 - Can **store transcription history locally** in SQLite if you enable it.
-- **Voice command keywords** (“start dictation”, “stop dictation”, “search now”) use Google’s online recognizer (network call).
+- **Voice command keywords** (“start dictation”, “stop dictation”, “search now”) use Google’s **online** recognizer **only when** you enable **Enable Voice Commands** in Settings. This is **OFF by default**.
 
 Recommendations:
 - Keep “Record History” **off** if you don’t want local text saved.
 - Verify the active window before enabling “Write to cursor.”
-- Review your OS microphone permissions.
-- If you prefer offline‑only behavior, disable voice commands by removing/commenting the `start_voice_command_listener()` call in `Voice_To_Text_Assistant.py`.
+- Review OS microphone & accessibility permissions.
+- Prefer **offline-only** usage by keeping **Enable Voice Commands** **off**.
 
 
 **Use at your own risk.** The maintainers are **not responsible** for any data loss or damage.
+
