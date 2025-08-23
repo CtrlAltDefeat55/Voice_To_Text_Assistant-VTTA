@@ -1,5 +1,3 @@
-## CODE_OF_CONDUCT.md
-
 # Code of Conduct
 
 - Be respectful.
@@ -7,3 +5,4 @@
 - No harassment or hate speech.
 
 - If you have a problem, open an issue. Maintainers will get to it if/when they can.
+
