@@ -21,7 +21,6 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 import pystray
 
-# --- NEW: optional platformdirs for cross-platform, user-writable app data dir
 try:
     from platformdirs import user_data_dir as _user_data_dir
 except Exception:
@@ -1100,6 +1099,59 @@ class VoiceFlowAssistant:
             self.handle_error("Application Runtime Error", e)
         finally:
             keyboard.unhook_all()
+    def quit_app(self, icon=None, item=None):
+        # Always run shutdown on the Tk thread
+        self.root.after(0, self._shutdown)
+
+    def _shutdown(self):
+        try:
+            self.update_status("Shutting down…")
+        except Exception:
+            pass
+
+        # Stop any ongoing work
+        self.voice_commands_active = False
+        self.is_recording = False
+
+        # Unhook keyboard so no global hooks keep the process alive
+        try:
+            keyboard.unhook_all()
+        except Exception:
+            pass
+
+        # Hide any overlay
+        try:
+            self._overlay_hide()
+        except Exception:
+            pass
+
+        # Stop tray icon if present
+        try:
+            if self.tray_icon:
+                # stop can block; do it off-thread but daemonized
+                threading.Thread(target=self.tray_icon.stop, daemon=True).start()
+        except Exception:
+            pass
+
+        # Tear down Tk
+        try:
+            self.root.quit()
+            self.root.destroy()
+        except Exception:
+            pass
+
+        # Final, guaranteed process exit (also closes the attached console on Windows)
+        try:
+            import sys, os
+            if sys.platform == "win32":
+                os._exit(0)
+            else:
+                sys.exit(0)
+        except SystemExit:
+            raise
+        except Exception:
+            os._exit(0)
+
 
 
 if __name__ == "__main__":
