@@ -1,5 +1,3 @@
-## CONTRIBUTING.md
-
 # Contributing
 
 Thanks for helping improve **VoiceFlow Assistant**! PRs and issues are welcome as time allows.
@@ -16,3 +14,4 @@ Thanks for helping improve **VoiceFlow Assistant**! PRs and issues are welcome a
 ## Commit messages
 
 - Use clear, descriptive messages (e.g., `ui: add overlay blink option`).
+
