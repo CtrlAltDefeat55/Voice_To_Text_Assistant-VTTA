@@ -1,9 +1,8 @@
 ## INSTALL-Windows.md
 
-```markdown
-# Install & Run — Windows (VoiceFlow Assistant)
+# Install & Run — Windows (Voice_To_Text_Assistant Assistant)
 
-These steps set up **VoiceFlow Assistant** on **Windows 10/11**.
+These steps set up **Voice To Text Assistant** on **Windows 10/11**.
 
 > This app records audio for short dictations, transcribes with Whisper, and can paste text to your cursor. It can also dictate a web search and open it in your browser.
 
@@ -16,8 +15,8 @@ These steps set up **VoiceFlow Assistant** on **Windows 10/11**.
 - **ZIP:** Download the repo ZIP from GitHub → extract
 - **Git:**
 ```powershell
-git clone https://github.com/<you>/VoiceFlowAssistant.git
-cd VoiceFlowAssistant
+git clone https://github.com/<you>/Voice_To_Text_Assistant.git
+cd Voice_To_Text_Assistant
 ```
 
 ## 3) Create and activate a virtual environment
