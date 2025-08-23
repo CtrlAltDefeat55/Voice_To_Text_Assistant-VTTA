@@ -1,5 +1,3 @@
-## SECURITY.md
-
 # Security Policy
 
 ## Support & updates
@@ -24,4 +22,5 @@ Recommendations:
 
 
 **Use at your own risk.** The maintainers are **not responsible** for any data loss or damage.
+
 
