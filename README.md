@@ -1,11 +1,11 @@
 ## README.md
 
-```markdown
+
 # VoiceFlow Assistant 🎤→📝 (Dictation Mode)
 
 A lightweight Tkinter desktop app that records short snippets, transcribes them with Whisper, and (optionally) pastes the text right where your cursor is. It also supports “dictate a web search” and includes a tiny blinking **recording overlay** so you always know what’s happening.
 
-<img alt="VoiceFlow Assistant UI" src="./assets/voiceflow-ui.png" width="900" />
+<img width="697" height="879" alt="UI_SpeechtoText" src="https://github.com/user-attachments/assets/8722edb8-3077-4735-916c-e28c364eac9c" />
 
 ## ✨ Features
 - **One‑tap dictation** with a compact overlay (blink while recording)
@@ -57,6 +57,7 @@ pip install -r requirements.txt
 python -m playwright install
 python Voice_To_Text_Assistant.py
 ```
+More detail: **[INSTALL-Windows.md](./INSTALL-Windows.md)**
 
 ## ⌨️ Default Hotkeys
 - **Ctrl+Shift+R** — Start/Stop dictation (paste to cursor if enabled)
@@ -80,10 +81,3 @@ See the full policy in [`SECURITY.md`](./SECURITY.md).
 
 ## 🤝 Contributing
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md). Code of conduct: [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md).
-
----
-
-**License:** Add a `LICENSE` (MIT is a great default) if you want a specific license.
-```
-
----
