@@ -82,10 +82,12 @@ Voice commands are **OFF by default**. To enable:
 - **Playwright won’t open** → Run `python -m playwright install`.
 
 ## 🔐 Security & Privacy (short)
-- **Mic access** for dictation (local Whisper unless you choose a remote model).
-- **Voice commands** (“start dictation”, “stop dictation”, “search now”) use Google’s recognizer over the network.
-- **Clipboard & keyboard automation** are used only to paste when you enable “Write to cursor.”
-- **Local history** (off by default) is saved to `VoiceFlow_App_Files/history.db`.
+- **Microphone** is accessed **only** when you press the dictation hotkey (or while a recording is in progress).
+- **Voice commands (Google)** are **OFF by default**. When you enable them in **Settings**, a background listener waits for short phrases (“start/stop dictation”, “search now”) and uses Google’s online recognizer (network call).
+- **Clipboard & keyboard automation** are used only if you toggle **Write to cursor** (for pasting).
+- **Local history** (off by default) is saved to `VoiceFlow_App_Files/history.db` (or your OS Application Support folder if available).
+
+To stay offline: leave **Enable Voice Commands** **unchecked** and use local Whisper-only dictation.
 
 See the full policy in [`SECURITY.md`](./SECURITY.md).
 
