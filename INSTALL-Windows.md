@@ -1,5 +1,3 @@
-## INSTALL-Windows.md
-
 # Install & Run — Windows (Voice_To_Text_Assistant Assistant)
 
 These steps set up **Voice To Text Assistant** on **Windows 10/11**.
