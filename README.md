@@ -15,6 +15,7 @@ A lightweight Tkinter desktop app that records short snippets, transcribes them 
 - **History (optional)** stored locally in SQLite; off by default
 - **Configurable Whisper model & language**
 - **Windows Startup integration** (creates a launcher .bat)
+- **Voice commands (optional)** — “start/stop dictation” & “search now” using Google’s recognizer; **OFF by default** and configurable in **Settings**.
 
 > ⚠️ This app uses your microphone. Optional voice commands use Google’s online recognizer. See **Security & Privacy** below.
 
@@ -64,6 +65,15 @@ More detail: **[INSTALL-Windows.md](./INSTALL-Windows.md)**
 - **Ctrl+Shift+S** — Dictate a **search** query (opens results)
 
 > You can change hotkeys and other options in **Settings**.
+
+## 🗣️ Voice Commands (optional)
+Voice commands are **OFF by default**. To enable:
+1. Open **Settings** → check **Enable Voice Commands (Google recognizer)**.
+2. Once enabled, you can say:
+   - “**start dictation**” / “**stop dictation**”
+   - “**search now**” (starts a quick voice search)
+> Note: This uses Google’s online speech recognizer (network access required).
+
 
 ## 🛠️ Troubleshooting
 - **`pyaudio` install fails** → On Windows, try `pip install pipwin && pipwin install pyaudio`. On macOS, `brew install portaudio` first. On Linux, install `portaudio19-dev`.
