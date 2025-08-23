@@ -1,0 +1,12 @@
+# VoiceFlow Assistant runtime deps
+openai-whisper>=20231117
+numpy>=1.24
+pyaudio>=0.2.14
+Pillow>=10.0.0
+pyautogui>=0.9.54
+pyperclip>=1.8.2
+keyboard>=0.13.5
+playwright>=1.45.0
+SpeechRecognition>=3.10.0
+pystray>=0.19.5
+platformdirs>=3.0

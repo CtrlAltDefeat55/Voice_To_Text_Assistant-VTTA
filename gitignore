@@ -1,0 +1,57 @@
+# ---- Python bytecode & caches ----
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ---- Virtual environments ----
+.venv/
+venv/
+env/
+ENV/
+
+# ---- Builds / packaging ----
+build/
+dist/
+*.egg-info/
+*.egg
+pip-wheel-metadata/
+
+# ---- PyInstaller (one-file EXE build) ----
+*.spec
+
+# ---- Logs / scratch ----
+*.log
+*.tmp
+*.temp
+*.bak
+tmp/
+temp/
+
+# ---- Test & coverage (harmless to ignore even if you don't use them yet) ----
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# ---- Editors / IDEs ----
+.vscode/
+.idea/
+*.iml
+
+# ---- OS cruft ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- App-specific notes ----
+# We want screenshots in assets/ tracked in Git:
+# (No blanket ignore of assets/ so PNG/JPG/WEBP previews remain committed.)
+# If you keep layered source art, ignore those heavy files:
+assets/**/*.psd
+assets/**/*.xcf
+
+# If you produce Windows installers or binaries, don't commit them:
+*.exe
+*.msi
