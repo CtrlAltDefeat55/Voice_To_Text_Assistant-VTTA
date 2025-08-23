@@ -1,6 +1,5 @@
 ## CONTRIBUTING.md
 
-```markdown
 # Contributing
 
 Thanks for helping improve **VoiceFlow Assistant**! PRs and issues are welcome as time allows.
@@ -15,4 +14,5 @@ Thanks for helping improve **VoiceFlow Assistant**! PRs and issues are welcome a
 - If you change hotkeys, recording logic, or system‑integration behavior, please add a short note in `README.md`.
 
 ## Commit messages
+
 - Use clear, descriptive messages (e.g., `ui: add overlay blink option`).
