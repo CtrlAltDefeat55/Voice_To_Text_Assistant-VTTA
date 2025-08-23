@@ -95,7 +95,8 @@ class VoiceFlowAssistant:
 
         self.whisper_model = None
         self.voice_recognizer = sr.Recognizer()
-        self.voice_commands_active = True
+        # --- CHANGED: respect config (OFF by default)
+        self.voice_commands_active = bool(self.config.get("enable_voice_commands", False))
 
         # --- UI State Variables ---
         self.write_to_cursor_var = tk.BooleanVar(value=True)
@@ -129,7 +130,7 @@ class VoiceFlowAssistant:
         width, height = 64, 64
         image = Image.new('RGB', (width, height), 'black')
         dc = ImageDraw.Draw(image)
-        dc.rectangle([(width // 4, height // 4), (width * 3 // 4, height * 3 // 4)], fill='white')
+        dc.rectangle([(width // 4, height // 4), (width * 3 // 4, height // 4 + (height // 2))], fill='white')
         return image
 
     def setup_tray_icon(self):
@@ -266,7 +267,9 @@ class VoiceFlowAssistant:
             "start_minimized": True,           # whether the Tk window starts minimized (toggle in Settings)
             # ---- ADDED defaults ----
             "hotkey_self_refresh_minutes": 60, # periodically re-register hotkeys
-            "wake_gap_seconds": 180            # if sleep/hibernation gap is detected, refresh
+            "wake_gap_seconds": 180,           # if sleep/hibernation gap is detected, refresh
+            # --- NEW: Voice commands opt-in (OFF by default)
+            "enable_voice_commands": False
         }
         if self.config_file.exists():
             try:
@@ -879,7 +882,7 @@ class VoiceFlowAssistant:
     def open_settings(self):
         settings_window = tk.Toplevel(self.root)
         settings_window.title("Settings")
-        settings_window.geometry("480x600")
+        settings_window.geometry("480x640")
         settings_window.transient(self.root)
 
         main_frame = ttk.Frame(settings_window, padding=10)
@@ -924,6 +927,14 @@ class VoiceFlowAssistant:
         overlay_flash_var = tk.IntVar(value=self.config.get("overlay_flash_top_ms", 800))
         ttk.Spinbox(main_frame, from_=200, to=3000, textvariable=overlay_flash_var, width=10).pack(anchor=tk.W, padx=10, pady=(0,10))
 
+        # --- NEW: Voice commands toggle (uses Google's online recognizer)
+        voice_cmds_var = tk.BooleanVar(value=self.config.get("enable_voice_commands", False))
+        ttk.Checkbutton(
+            main_frame,
+            text="Enable Voice Commands (Google recognizer)",
+            variable=voice_cmds_var
+        ).pack(anchor=tk.W, padx=10, pady=(10,0))
+
         # Start minimized toggle
         start_min_var = tk.BooleanVar(value=self.config.get("start_minimized", True))
         ttk.Checkbutton(main_frame, text="Start Minimized (window)", variable=start_min_var).pack(anchor=tk.W, padx=10, pady=(10,0))
@@ -939,10 +950,13 @@ class VoiceFlowAssistant:
                 "hotkey_post_debounce_ms": post_db_var.get(),
                 "overlay_blink_ms": overlay_blink_var.get(),
                 "overlay_flash_top_ms": overlay_flash_var.get(),
+                "enable_voice_commands": bool(voice_cmds_var.get()),  # NEW
                 "start_minimized": bool(start_min_var.get())
             })
             self.save_config()
+            # apply runtime changes
             self.silence_duration = self.config["silence_duration"]
+            self.voice_commands_active = bool(self.config.get("enable_voice_commands", False))  # NEW
             self.setup_hotkeys()
             # (Re)write launcher to reflect any minimized toggle change
             if sys.platform == "win32":
@@ -1065,6 +1079,7 @@ class VoiceFlowAssistant:
         if sys.platform != "win32":
             messagebox.showinfo("Unsupported OS", "Removing from Startup is currently configured for Windows only.")
             return
+
 
         shortcut_path = startup_folder / f"{self.app_name}.lnk"
         try:
