@@ -21,37 +21,21 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 import pystray
 
-try:
-    from platformdirs import user_data_dir as _user_data_dir
-except Exception:
-    _user_data_dir = None
-
-
 class VoiceFlowAssistant:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("VoiceFlow Assistant (Dictation Mode)")
+        self.root.title("VTTA (Voice to text Assistant)")
         self.root.geometry("700x850")
 
-        # --- App naming early (used for data dir)
-        self.app_name = "VoiceFlowAssistant"
-
-        # --- Correctly get the script's directory (used for launcher, etc.)
+        # --- Correctly get the script's directory ---
         if getattr(sys, 'frozen', False):
             self.script_dir = Path(sys.executable).parent
         else:
             self.script_dir = Path(__file__).parent.resolve()
+        self.app_data_dir = self.script_dir / "VoiceFlow_App_Files"
+        self.app_data_dir.mkdir(exist_ok=True)
 
-        # --- CHANGED: user-writable app data dir via platformdirs (with fallback)
-        if _user_data_dir:
-            # e.g. Windows: %APPDATA%\VoiceFlowAssistant, macOS: ~/Library/Application Support/VoiceFlowAssistant
-            # Linux: ~/.local/share/VoiceFlowAssistant
-            self.app_data_dir = Path(_user_data_dir(self.app_name, "VoiceFlow"))
-        else:
-            # Fallback to original behavior next to the script/exe
-            self.app_data_dir = self.script_dir / "VoiceFlow_App_Files"
-        self.app_data_dir.mkdir(parents=True, exist_ok=True)
-
+        self.app_name = "VoiceFlowAssistant"
         self.status_var = tk.StringVar(value="Initializing...")
 
         # --- State Management ---
@@ -94,7 +78,6 @@ class VoiceFlowAssistant:
 
         self.whisper_model = None
         self.voice_recognizer = sr.Recognizer()
-        # --- CHANGED: respect config (OFF by default)
         self.voice_commands_active = bool(self.config.get("enable_voice_commands", False))
 
         # --- UI State Variables ---
@@ -107,7 +90,7 @@ class VoiceFlowAssistant:
 
         self.create_widgets()
         self.setup_hotkeys()
-        self.start_hotkey_watchdog()  # <<-- ADDED: start watchdog after setting hotkeys
+        self.start_hotkey_watchdog()  # start watchdog after setting hotkeys
 
         self.load_whisper_model()
         self.start_voice_command_listener()
@@ -129,20 +112,20 @@ class VoiceFlowAssistant:
         width, height = 64, 64
         image = Image.new('RGB', (width, height), 'black')
         dc = ImageDraw.Draw(image)
-        dc.rectangle([(width // 4, height // 4), (width * 3 // 4, height // 4 + (height // 2))], fill='white')
+        dc.rectangle([(width // 4, height // 4), (width * 3 // 4, height * 3 // 4)], fill='white')
         return image
 
     def setup_tray_icon(self):
         icon_image = self.create_tray_icon_image()
         menu = (
             pystray.MenuItem('Show', self.show_window, default=True),
-            pystray.MenuItem('Reload hotkeys', self.tray_reload_hotkeys),  # <<-- ADDED
+            pystray.MenuItem('Reload hotkeys', self.tray_reload_hotkeys),
             pystray.MenuItem('Exit', self.quit_app)
         )
         self.tray_icon = pystray.Icon(self.app_name, icon_image, self.app_name, menu)
         self.tray_icon.run()
 
-    def tray_reload_hotkeys(self, icon, item):  # <<-- ADDED
+    def tray_reload_hotkeys(self, icon, item):
         # ensure we run on Tk thread
         self.root.after(0, lambda: self.refresh_hotkeys(reason="tray"))
 
@@ -158,11 +141,23 @@ class VoiceFlowAssistant:
         self.root.quit()
 
     def _set_indicator(self, state: str):
-        """Small LED in bottom-right of the app: idle=gray, recording=green, transcribing=orange, error=red."""
-        color = {"idle": "gray", "recording": "green", "transcribing": "orange", "error": "red"}.get(state, "gray")
-        if hasattr(self, "rec_dot") and self.rec_dot:
-            self.rec_dot.delete("all")
-            self.rec_dot.create_oval(2, 2, 10, 10, fill=color, outline=color)
+        """
+        Small LED in bottom-right of the app: idle=gray, recording=green, transcribing=orange, error=red.
+        Always marshal to Tk main thread if needed.
+        """
+        def _apply():
+            color = {"idle": "gray", "recording": "green", "transcribing": "orange", "error": "red"}.get(state, "gray")
+            if hasattr(self, "rec_dot") and self.rec_dot:
+                self.rec_dot.delete("all")
+                self.rec_dot.create_oval(2, 2, 10, 10, fill=color, outline=color)
+
+        if threading.current_thread() is threading.main_thread():
+            _apply()
+        else:
+            try:
+                self.root.after(0, _apply)
+            except Exception:
+                pass
 
     def create_widgets(self):
         # Main layout
@@ -182,7 +177,7 @@ class VoiceFlowAssistant:
         self.search_button = ttk.Button(button_frame, text="Web Search", command=self.perform_search_from_button)
         self.search_button.pack(side=tk.LEFT, padx=(0, 5))
 
-        # <<-- ADDED: manual hotkey reload button
+        # manual hotkey reload button
         self.reload_hotkeys_btn = ttk.Button(button_frame, text="Reload Hotkeys",
                                              command=lambda: self.refresh_hotkeys(reason="manual"))
         self.reload_hotkeys_btn.pack(side=tk.LEFT, padx=(5, 0))
@@ -241,12 +236,24 @@ class VoiceFlowAssistant:
         self._set_indicator("idle")
 
     def update_status(self, status):
-        try:
-            if hasattr(self, 'status_var') and self.status_var:
-                self.status_var.set(f"[{datetime.now().strftime('%H:%M:%S')}] {status}")
-                self.root.update_idletasks()
-        except Exception:
-            pass
+        """
+        Safely update the status bar from any thread.
+        """
+        def _apply():
+            try:
+                if hasattr(self, 'status_var') and self.status_var:
+                    self.status_var.set(f"[{datetime.now().strftime('%H:%M:%S')}] {status}")
+                    self.root.update_idletasks()
+            except Exception:
+                pass
+
+        if threading.current_thread() is threading.main_thread():
+            _apply()
+        else:
+            try:
+                self.root.after(0, _apply)
+            except Exception:
+                pass
 
     # ---------------- Config & DB ----------------
 
@@ -264,11 +271,10 @@ class VoiceFlowAssistant:
             "overlay_blink_ms": 500,           # blink speed for the overlay LED
             "overlay_flash_top_ms": 800,       # how long overlay stays topmost on each start
             "start_minimized": True,           # whether the Tk window starts minimized (toggle in Settings)
-            # ---- ADDED defaults ----
+            # defaults
             "hotkey_self_refresh_minutes": 60, # periodically re-register hotkeys
             "wake_gap_seconds": 180,           # if sleep/hibernation gap is detected, refresh
-            # --- NEW: Voice commands opt-in (OFF by default)
-            "enable_voice_commands": False
+            "enable_voice_commands": False,    # allow toggling Google voice commands (default OFF)
         }
         if self.config_file.exists():
             try:
@@ -365,6 +371,12 @@ class VoiceFlowAssistant:
     # ---------------- Hotkeys ----------------
 
     def setup_hotkeys(self):
+        """
+        Register global hotkeys. The callbacks given to 'keyboard' must NOT
+        touch Tkinter. They only bounce to the main thread via root.after.
+        Debounce stays in the main-thread handlers.
+        """
+        # Best-effort cleanup of prior handlers
         try:
             if self.transcription_hotkey_handler:
                 keyboard.remove_hotkey(self.transcription_hotkey_handler)
@@ -372,22 +384,52 @@ class VoiceFlowAssistant:
                 keyboard.remove_hotkey(self.search_hotkey_handler)
         except Exception:
             pass
+
         try:
             trans_key = self.config.get("transcription_hotkey", "ctrl+shift+r")
             search_key = self.config.get("search_hotkey", "ctrl+shift+s")
 
-            # Use press-based triggers (compatible across keyboard versions)
+            # Hook-thread wrappers (no debounce, no Tk touching)
             self.transcription_hotkey_handler = keyboard.add_hotkey(
-                trans_key, self._on_transcription_hotkey
+                trans_key, self._kb_transcription_hotkey
             )
             self.search_hotkey_handler = keyboard.add_hotkey(
-                search_key, self._on_search_hotkey
+                search_key, self._kb_search_hotkey
             )
+
             self.update_status(f"Hotkeys set: Dictate[{trans_key}], Search[{search_key}]")
         except Exception as e:
             self.handle_error("Hotkey Set Error", e, show_message=True)
 
-    # --------- ADDED: self-healing hotkey refresh & watchdog ----------
+    # --------- Thread-safe wrappers for keyboard callbacks ----------
+
+    def _kb_transcription_hotkey(self):
+        """
+        Runs on keyboard's hook thread. Do NOT touch Tk here.
+        Just bounce to Tk main thread; actual debounce happens in _on_transcription_hotkey.
+        """
+        try:
+            self.root.after(0, self._on_transcription_hotkey)
+        except Exception as e:
+            try:
+                self.root.after(0, lambda: self.handle_error("Hotkey (dictation) thread error", e, show_message=False))
+            except Exception:
+                pass
+
+    def _kb_search_hotkey(self):
+        """
+        Runs on keyboard's hook thread. Do NOT touch Tk here.
+        Just bounce to Tk main thread; actual debounce happens in _on_search_hotkey.
+        """
+        try:
+            self.root.after(0, self._on_search_hotkey)
+        except Exception as e:
+            try:
+                self.root.after(0, lambda: self.handle_error("Hotkey (search) thread error", e, show_message=False))
+            except Exception:
+                pass
+
+    # --------- Self-healing hotkey refresh & watchdog ----------
 
     def refresh_hotkeys(self, reason="auto"):
         """
@@ -591,9 +633,7 @@ class VoiceFlowAssistant:
             self.update_status("Pasting text...")
             time.sleep(0.2)
             pyperclip.copy(text)
-            # --- CHANGED: cross-platform paste shortcut
-            mod = 'command' if sys.platform == 'darwin' else 'ctrl'
-            pyautogui.hotkey(mod, 'v')
+            pyautogui.hotkey('ctrl', 'v')
             self.update_status("Pasting complete.")
         except Exception as e:
             self.handle_error("Paste Error", e)
@@ -881,7 +921,7 @@ class VoiceFlowAssistant:
     def open_settings(self):
         settings_window = tk.Toplevel(self.root)
         settings_window.title("Settings")
-        settings_window.geometry("480x640")
+        settings_window.geometry("480x600")
         settings_window.transient(self.root)
 
         main_frame = ttk.Frame(settings_window, padding=10)
@@ -926,7 +966,7 @@ class VoiceFlowAssistant:
         overlay_flash_var = tk.IntVar(value=self.config.get("overlay_flash_top_ms", 800))
         ttk.Spinbox(main_frame, from_=200, to=3000, textvariable=overlay_flash_var, width=10).pack(anchor=tk.W, padx=10, pady=(0,10))
 
-        # --- NEW: Voice commands toggle (uses Google's online recognizer)
+        # Voice commands toggle (Google recognizer) - default OFF
         voice_cmds_var = tk.BooleanVar(value=self.config.get("enable_voice_commands", False))
         ttk.Checkbutton(
             main_frame,
@@ -938,6 +978,7 @@ class VoiceFlowAssistant:
         start_min_var = tk.BooleanVar(value=self.config.get("start_minimized", True))
         ttk.Checkbutton(main_frame, text="Start Minimized (window)", variable=start_min_var).pack(anchor=tk.W, padx=10, pady=(10,0))
 
+        # ---- save handler
         def save_settings():
             self.config.update({
                 "transcription_hotkey": trans_hotkey.get(),
@@ -949,15 +990,14 @@ class VoiceFlowAssistant:
                 "hotkey_post_debounce_ms": post_db_var.get(),
                 "overlay_blink_ms": overlay_blink_var.get(),
                 "overlay_flash_top_ms": overlay_flash_var.get(),
-                "enable_voice_commands": bool(voice_cmds_var.get()),  # NEW
-                "start_minimized": bool(start_min_var.get())
+                "start_minimized": bool(start_min_var.get()),
+                "enable_voice_commands": bool(voice_cmds_var.get()),
             })
             self.save_config()
-            # apply runtime changes
             self.silence_duration = self.config["silence_duration"]
-            self.voice_commands_active = bool(self.config.get("enable_voice_commands", False))  # NEW
             self.setup_hotkeys()
-            # (Re)write launcher to reflect any minimized toggle change
+            # apply voice toggle immediately
+            self.voice_commands_active = bool(self.config.get("enable_voice_commands", False))
             if sys.platform == "win32":
                 self.write_launcher_bat()
             settings_window.destroy()
@@ -1010,7 +1050,14 @@ class VoiceFlowAssistant:
         except Exception:
             pass
         if show_message and hasattr(self, 'root') and self.root.winfo_exists():
-            messagebox.showerror(context, error_msg)
+            # This may be called from various threads, but Tk messageboxes must be shown on main thread.
+            if threading.current_thread() is threading.main_thread():
+                messagebox.showerror(context, error_msg)
+            else:
+                try:
+                    self.root.after(0, lambda: messagebox.showerror(context, error_msg))
+                except Exception:
+                    pass
         self.update_status(f"Error: {context}")
         # show red LED and briefly debounce to avoid immediate retrigger after errors
         self._set_indicator("error")
@@ -1079,7 +1126,6 @@ class VoiceFlowAssistant:
             messagebox.showinfo("Unsupported OS", "Removing from Startup is currently configured for Windows only.")
             return
 
-
         shortcut_path = startup_folder / f"{self.app_name}.lnk"
         try:
             if shortcut_path.exists():
@@ -1099,59 +1145,6 @@ class VoiceFlowAssistant:
             self.handle_error("Application Runtime Error", e)
         finally:
             keyboard.unhook_all()
-    def quit_app(self, icon=None, item=None):
-        # Always run shutdown on the Tk thread
-        self.root.after(0, self._shutdown)
-
-    def _shutdown(self):
-        try:
-            self.update_status("Shutting down…")
-        except Exception:
-            pass
-
-        # Stop any ongoing work
-        self.voice_commands_active = False
-        self.is_recording = False
-
-        # Unhook keyboard so no global hooks keep the process alive
-        try:
-            keyboard.unhook_all()
-        except Exception:
-            pass
-
-        # Hide any overlay
-        try:
-            self._overlay_hide()
-        except Exception:
-            pass
-
-        # Stop tray icon if present
-        try:
-            if self.tray_icon:
-                # stop can block; do it off-thread but daemonized
-                threading.Thread(target=self.tray_icon.stop, daemon=True).start()
-        except Exception:
-            pass
-
-        # Tear down Tk
-        try:
-            self.root.quit()
-            self.root.destroy()
-        except Exception:
-            pass
-
-        # Final, guaranteed process exit (also closes the attached console on Windows)
-        try:
-            import sys, os
-            if sys.platform == "win32":
-                os._exit(0)
-            else:
-                sys.exit(0)
-        except SystemExit:
-            raise
-        except Exception:
-            os._exit(0)
-
 
 
 if __name__ == "__main__":
