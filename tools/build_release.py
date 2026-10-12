@@ -5,9 +5,10 @@
 Each ZIP unzips to a tidy folder with only the launcher for that platform on top:
 
     VTTA/
-      Start VTTA.bat  (or Start VTTA.command / start-vtta.sh)
+      Start VTTA (Windows).bat      (or "Start VTTA (Mac).command" / "Start VTTA (Linux).sh")
       Read Me First.txt
-      app/            the program, icon, docs; its settings and private Python live here too
+      app/                          the program, icon, docs, "Troubleshoot VTTA (...)";
+                                    its settings and private Python live here too
 
 The file names stay the same for every version, so README links to
 .../releases/latest/download/VTTA-Windows.zip always fetch the newest one, and the
@@ -32,53 +33,93 @@ APP_FILES = [
     "LICENSE",
 ]
 PLATFORMS = {
-    # name: (top-level launcher, extra files placed in app/, platform-specific docs in app/)
-    "Windows": ("Start VTTA.bat", [], ["INSTALL-Windows.md"]),
-    "macOS": ("Start VTTA.command", ["start-vtta.sh"], []),
-    "Linux": ("start-vtta.sh", [], []),
+    # name: (top-level launcher, files from tools/ placed in app/, extra docs in app/)
+    "Windows": ("Start VTTA (Windows).bat", ["Troubleshoot VTTA (Windows).bat"], ["INSTALL-Windows.md"]),
+    "macOS": ("Start VTTA (Mac).command", ["launcher.sh", "Troubleshoot VTTA (Mac).command"], []),
+    "Linux": ("Start VTTA (Linux).sh", ["launcher.sh", "Troubleshoot VTTA (Linux).sh"], []),
 }
-EXECUTABLE = {"Start VTTA.command", "start-vtta.sh"}
 
 READ_ME = {
-    "Windows": """VTTA - Voice to Text Assistant {version}
+    "Windows": """VTTA - Voice to Text Assistant {version}  (Windows)
+=================================================
 
-To start VTTA, double-click "Start VTTA.bat".
+START
+  Double-click  "Start VTTA (Windows).bat"
 
-The first start sets everything up inside this folder: it needs internet, about
-1 GB and a few minutes. If Python is missing it offers to install it, and at the
-end it can put a VTTA shortcut on your desktop. After that VTTA opens right away.
+  The first start sets everything up inside this VTTA folder: it needs internet,
+  about 1 GB and a few minutes. If Python is missing it offers to install it, and
+  at the end it can put a VTTA shortcut on your desktop. After that, VTTA opens
+  right away. If Windows SmartScreen warns: More info > Run anyway.
 
-If Windows SmartScreen warns about the file: More info > Run anyway.
+USE
+  Press Ctrl+Shift+R, speak, press Ctrl+Shift+R again - the text is pasted where
+  your cursor is. Ctrl+Shift+S does the same for a web search.
 
-Using VTTA: press Ctrl+Shift+R, speak, press Ctrl+Shift+R again - the text is
-pasted where your cursor is. VTTA checks for updates once a day and can update
-itself (Settings > General). Keep this folder together; you can move it anytime.
+UPDATES
+  VTTA checks once a day and shows "Update to x.y" in its status bar. One click
+  installs it and keeps your settings. (Help > Check for Updates; can be turned
+  off in Settings > General.)
+
+OPTIONS & TROUBLESHOOTING
+  app\\Troubleshoot VTTA (Windows).bat  (also: Help > Troubleshooting & Options)
+    - start with messages shown, if VTTA won't open
+    - repair VTTA, create a desktop shortcut, free disk space
+
+MOVE OR REMOVE
+  Keep this folder together; you can move it anytime. To uninstall, turn off
+  "Launch at sign-in" in Settings if you used it, then delete this folder.
 """,
-    "macOS": """VTTA - Voice to Text Assistant {version}
+    "macOS": """VTTA - Voice to Text Assistant {version}  (Mac)
+=============================================
 
-To start VTTA, double-click "Start VTTA.command".
-The very first time, macOS blocks downloaded scripts: right-click it and choose Open.
+START
+  Double-click  "Start VTTA (Mac).command"
+  The very first time macOS blocks downloaded scripts: right-click the file,
+  choose Open, then Open again.
 
-The first start sets everything up inside this folder: it needs internet, about
-1 GB and a few minutes (and Homebrew, https://brew.sh, for the audio library).
-After that VTTA opens right away.
+  The first start sets everything up inside this VTTA folder: it needs internet,
+  about 1 GB and a few minutes (and Homebrew, https://brew.sh, for the audio
+  library). After that, VTTA opens right away.
 
-Then allow Terminal under System Settings > Privacy & Security >
-Microphone, Accessibility and Input Monitoring, and start VTTA again.
+  Then allow "Terminal" in System Settings > Privacy & Security under
+  Microphone, Accessibility and Input Monitoring, and start VTTA again.
 
-Using VTTA: press Ctrl+Shift+R, speak, press it again - the text is pasted where
-your cursor is. VTTA checks for updates once a day and can update itself.
-Keep this folder together; you can move it anytime.
+USE
+  Press Ctrl+Shift+R, speak, press Ctrl+Shift+R again - the text is pasted where
+  your cursor is. Ctrl+Shift+S does the same for a web search.
+
+UPDATES
+  VTTA checks once a day and shows "Update to x.y" in its status bar. One click
+  installs it and keeps your settings. (Help > Check for Updates.)
+
+OPTIONS & TROUBLESHOOTING
+  app/Troubleshoot VTTA (Mac).command  (also: Help > Troubleshooting & Options)
+    - start with messages shown, if VTTA won't open
+    - repair VTTA, free disk space
+
+MOVE OR REMOVE
+  Keep this folder together; you can move it anytime. To uninstall, turn off
+  "Launch at login" in Settings if you used it, then delete this folder.
 """,
-    "Linux": """VTTA - Voice to Text Assistant {version}
+    "Linux": """VTTA - Voice to Text Assistant {version}  (Linux)
+===============================================
 
-To start VTTA, run ./start-vtta.sh
+START
+  ./"Start VTTA (Linux).sh"
+  The first start sets everything up inside this folder (needs internet, ~1 GB).
+  You may need: sudo apt install python3-venv python3-tk python3-dev portaudio19-dev xclip
 
-The first start sets everything up inside this folder (needs internet, about 1 GB).
-You may need: sudo apt install python3-venv python3-tk python3-dev portaudio19-dev xclip
+USE
+  Ctrl+Shift+R to dictate and paste, Ctrl+Shift+S for a web search
+  (global hotkeys need root on Linux; the window's buttons always work).
 
-Using VTTA: press Ctrl+Shift+R, speak, press it again. VTTA checks for updates
-once a day and can update itself. Keep this folder together.
+UPDATES
+  VTTA checks once a day and offers "Update to x.y" in its status bar.
+
+OPTIONS & TROUBLESHOOTING
+  app/Troubleshoot VTTA (Linux).sh - start with messages, repair, free disk space.
+
+To uninstall, delete this folder.
 """,
 }
 
@@ -89,6 +130,10 @@ def version():
     if not m:
         sys.exit("APP_VERSION not found")
     return m.group(1)
+
+
+def is_exec(name):
+    return name.endswith((".sh", ".command"))
 
 
 def normalize(name, data):
@@ -109,19 +154,21 @@ def add(zf, arcname, data, executable=False):
 
 def build(platform, ver, out_dir):
     launcher, extras, docs = PLATFORMS[platform]
-    files = APP_FILES + extras + docs + [launcher]
+    files = APP_FILES + [f"tools/{e}" for e in extras] + docs + [launcher]
     missing = [f for f in files if not (ROOT / f).is_file()]
     if missing:
         sys.exit(f"Missing files: {missing}")
     out = out_dir / f"VTTA-{platform}.zip"
     with zipfile.ZipFile(out, "w") as zf:
-        add(zf, f"VTTA/{launcher}", normalize(launcher, (ROOT / launcher).read_bytes()), launcher in EXECUTABLE)
+        add(zf, f"VTTA/{launcher}", normalize(launcher, (ROOT / launcher).read_bytes()), is_exec(launcher))
         text = READ_ME[platform].format(version=ver)
         if platform == "Windows":
             text = text.replace("\n", "\r\n")
         add(zf, "VTTA/Read Me First.txt", text.encode("utf-8"))
-        for f in APP_FILES + extras + docs:
-            add(zf, f"VTTA/app/{f}", normalize(f, (ROOT / f).read_bytes()), Path(f).name in EXECUTABLE)
+        for f in APP_FILES + docs:
+            add(zf, f"VTTA/app/{f}", normalize(f, (ROOT / f).read_bytes()))
+        for e in extras:
+            add(zf, f"VTTA/app/{e}", normalize(e, (ROOT / "tools" / e).read_bytes()), is_exec(e))
     return out
 
 

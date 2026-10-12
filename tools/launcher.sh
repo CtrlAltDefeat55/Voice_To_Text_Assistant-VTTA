@@ -1,19 +1,21 @@
 #!/bin/bash
 # ==========================================================================
-#  VTTA - Voice to Text Assistant : macOS / Linux launcher
-#  macOS: double-click "Start VTTA.command" (it runs this script).
-#  Linux: run ./start-vtta.sh
+#  VTTA - Voice to Text Assistant : launcher engine for macOS and Linux
 #
-#  The first run sets up a private Python environment in the ".venv" folder
-#  next to this file (needs internet once, takes a few minutes). Later runs
-#  start VTTA straight away. Everything stays inside this folder.
+#  Users start VTTA with "Start VTTA (Mac).command" or "Start VTTA (Linux).sh";
+#  those run this script. The first start sets up a private Python environment
+#  inside the VTTA folder (needs internet once, takes a few minutes). Later
+#  starts open VTTA straight away. Nothing is installed outside the VTTA folder
+#  (on macOS, Homebrew may be used once to add the PortAudio audio library).
 #
-#    ./start-vtta.sh debug   - run in this terminal to see errors
-#    ./start-vtta.sh setup   - repeat the setup (repair)
+#  Options:  menu   - options and troubleshooting
+#            debug  - start and show messages
+#            setup  - repair (reinstall components)
 # ==========================================================================
-HERE="$(cd "$(dirname "$0")" && pwd)" || exit 1
-# Release downloads keep the app in an "app" subfolder; a source checkout keeps it next to this script.
-if [ -f "$HERE/app/Voice_To_Text_Assistant.py" ]; then APP_DIR="$HERE/app"; else APP_DIR="$HERE"; fi
+ENGINE_DIR="$(cd "$(dirname "$0")" && pwd)" || exit 1
+# Release downloads: VTTA/app/launcher.sh next to the program. Source checkout: tools/launcher.sh.
+if [ -f "$ENGINE_DIR/Voice_To_Text_Assistant.py" ]; then APP_DIR="$ENGINE_DIR"; else APP_DIR="$(dirname "$ENGINE_DIR")"; fi
+LAUNCH_DIR="$(dirname "$ENGINE_DIR")"     # where the "Start VTTA" file is
 cd "$APP_DIR" || exit 1
 VENV="$APP_DIR/.venv"
 VPY="$VENV/bin/python"
@@ -31,7 +33,7 @@ pause_exit() {
 fail() {
     echo
     say "Setup did not finish: $*"
-    say "The messages above say why. Fix it, then start VTTA again."
+    say "The messages above say why. Fix it, then open \"Start VTTA\" again."
     pause_exit 1
 }
 
@@ -59,7 +61,10 @@ find_python() {
 
 launch() {
     if [ "$1" = "debug" ]; then
-        exec "$VPY" "$APP_DIR/Voice_To_Text_Assistant.py"
+        say "VTTA is running. Its messages appear below; close VTTA to return here."
+        echo
+        "$VPY" "$APP_DIR/Voice_To_Text_Assistant.py"
+        pause_exit 0
     fi
     nohup "$VPY" "$APP_DIR/Voice_To_Text_Assistant.py" >/dev/null 2>&1 &
     disown 2>/dev/null
@@ -127,14 +132,53 @@ setup() {
     say "Setup complete."
 }
 
-# In a full source download on macOS, hide the launchers Finder users don't need.
-if [ "$OS" = "Darwin" ] && [ -f "$HERE/Start VTTA.bat" ]; then
-    chflags hidden "$HERE/Start VTTA.bat" "$HERE/start-vtta.sh" 2>/dev/null
+open_folder() {
+    if [ "$OS" = "Darwin" ]; then open "$LAUNCH_DIR"; else xdg-open "$LAUNCH_DIR" >/dev/null 2>&1 & fi
+}
+
+menu() {
+    while true; do
+        clear 2>/dev/null
+        echo
+        say "VTTA - options and troubleshooting"
+        say "----------------------------------"
+        say "  1   Start VTTA"
+        say "  2   Start VTTA and show its messages   (use this if VTTA won't open)"
+        say "  3   Repair VTTA                        (reinstall its components)"
+        say "  4   Open the VTTA folder"
+        say "  5   Free disk space                    (remove the ~1 GB of components;"
+        say "                                          they are set up again next start)"
+        say "  0   Close"
+        echo
+        read -r -p "  Type a number and press Return: " pick
+        case "$pick" in
+            1) MODE=""; return ;;
+            2) MODE="debug"; return ;;
+            3) MODE="setup"; return ;;
+            4) open_folder ;;
+            5) echo
+               say "This removes VTTA's private Python environment (about 1 GB). Your settings,"
+               say "history and downloaded speech models are kept. Close VTTA first."
+               read -r -p "  Remove it now? [y/N] " yn
+               if [ "$yn" = "y" ] || [ "$yn" = "Y" ]; then
+                   rm -rf "$VENV" && say "Removed. The next start sets it up again."
+                   read -r -p "  Press Return to continue. " _
+               fi ;;
+            0|q|Q) exit 0 ;;
+        esac
+    done
+}
+
+# In a full source download, hide the other systems' launchers in Finder.
+if [ "$OS" = "Darwin" ] && [ -f "$LAUNCH_DIR/Start VTTA (Windows).bat" ]; then
+    chflags hidden "$LAUNCH_DIR/Start VTTA (Windows).bat" "$LAUNCH_DIR/Start VTTA (Linux).sh" 2>/dev/null
 fi
 
-if [ "$1" = "setup" ] || ! venv_ok; then
+MODE="$1"
+if [ "$MODE" = "menu" ]; then menu; fi
+if [ "$MODE" = "setup" ] || ! venv_ok; then
     setup
 elif ! cmp -s "$REQ" "$STAMP"; then
     setup   # requirements changed (app updated): install what's new
 fi
-launch "$1"
+launch "$MODE"

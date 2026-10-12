@@ -1172,6 +1172,7 @@ class VoiceFlowAssistant:
         m.add_cascade(label="Tools", menu=tm)
         hm = tk.Menu(m, tearoff=False)
         hm.add_command(label="Shortcuts & Tips", command=self.show_help)
+        hm.add_command(label="Troubleshooting & Options\u2026", command=self.open_troubleshooter)
         hm.add_command(label="Check for Updates\u2026", command=lambda: self.check_for_updates(manual=True))
         hm.add_command(label="About VTTA", command=self.show_about)
         m.add_cascade(label="Help", menu=hm)
@@ -3139,8 +3140,8 @@ class VoiceFlowAssistant:
 
     def _layout(self):
         """(launcher directory, launcher file). Release downloads keep the app in an 'app' subfolder."""
-        name = {"Windows": "Start VTTA.bat", "macOS": "Start VTTA.command", "Linux": "start-vtta.sh"}[
-            self._platform_name()]
+        name = {"Windows": "Start VTTA (Windows).bat", "macOS": "Start VTTA (Mac).command",
+                "Linux": "Start VTTA (Linux).sh"}[self._platform_name()]
         parent = self.script_dir.parent
         if self.script_dir.name == "app" and (parent / name).exists():
             return parent, parent / name
@@ -3352,6 +3353,48 @@ class VoiceFlowAssistant:
         self.update_btn.state(["!disabled"])
         self.handle_error("Update failed", "The update couldn’t be installed, so nothing was changed. "
                           "Check your internet connection and try again.", details=error)
+
+    def _troubleshooter_path(self):
+        name = {"Windows": "Troubleshoot VTTA (Windows).bat", "macOS": "Troubleshoot VTTA (Mac).command",
+                "Linux": "Troubleshoot VTTA (Linux).sh"}[self._platform_name()]
+        for folder in (self.script_dir, self.script_dir / "tools"):
+            if (folder / name).exists():
+                return folder / name
+        return None
+
+    def open_troubleshooter(self):
+        """Open the launcher's options menu (start with messages, repair, shortcut, free space)."""
+        tool = self._troubleshooter_path()
+        if tool is None:
+            messagebox.showinfo("Troubleshooting & Options", "The troubleshooting tool isn\u2019t included in this "
+                                "copy of VTTA. Download VTTA from the Releases page to get it.", parent=self.root)
+            return
+        if not messagebox.askyesno(
+                "Troubleshooting & Options",
+                "This opens VTTA\u2019s options menu in a separate window. From there you can:\n\n"
+                "\u2022 start VTTA with its messages shown (if it won\u2019t open)\n"
+                "\u2022 repair VTTA (reinstall its components)\n"
+                + ("\u2022 create a desktop shortcut\n" if IS_WIN else "")
+                + "\u2022 free disk space\n\nRepairing works best with VTTA closed. Open the menu now?",
+                parent=self.root):
+            return
+        try:
+            if IS_WIN:
+                subprocess.Popen(["cmd", "/c", "start", "", str(tool)], cwd=str(tool.parent),
+                                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            elif IS_MAC:
+                subprocess.Popen(["open", str(tool)])
+            else:
+                for term in (["x-terminal-emulator", "-e"], ["gnome-terminal", "--"], ["konsole", "-e"],
+                             ["xterm", "-e"]):
+                    if shutil.which(term[0]):
+                        subprocess.Popen(term + ["/bin/bash", str(tool)], start_new_session=True)
+                        break
+                else:
+                    messagebox.showinfo("Troubleshooting & Options", f"Run this in a terminal:\n\n{tool}",
+                                        parent=self.root)
+        except Exception as e:
+            self.handle_error("Couldn\u2019t open the tool", f"Run it yourself: {tool}", details=e)
 
     def restart_app(self):
         """Start a fresh copy through the platform launcher (which also installs any new components), then quit."""

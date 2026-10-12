@@ -26,8 +26,10 @@ jobs:
       - name: Check the app and launchers
         run: |
           python -m py_compile Voice_To_Text_Assistant.py tools/build_release.py
-          bash -n start-vtta.sh
-          bash -n "Start VTTA.command"
+          for f in tools/launcher.sh "Start VTTA (Mac).command" "Start VTTA (Linux).sh" \
+                   "tools/Troubleshoot VTTA (Mac).command" "tools/Troubleshoot VTTA (Linux).sh"; do
+            bash -n "$f"
+          done
 
       - name: Tag matches APP_VERSION
         if: startsWith(github.ref, 'refs/tags/')

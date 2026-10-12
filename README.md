@@ -24,27 +24,50 @@ A lightweight desktop dictation helper for **Windows and macOS** (Linux works to
 |---|---|---|
 | [**VTTA-Windows.zip**](https://github.com/CtrlAltDefeat55/Voice_To_Text_Assistant-VTTA/releases/latest/download/VTTA-Windows.zip) | [**VTTA-macOS.zip**](https://github.com/CtrlAltDefeat55/Voice_To_Text_Assistant-VTTA/releases/latest/download/VTTA-macOS.zip) | [**VTTA-Linux.zip**](https://github.com/CtrlAltDefeat55/Voice_To_Text_Assistant-VTTA/releases/latest/download/VTTA-Linux.zip) |
 
-**2. Unzip it anywhere.** You get a tidy **VTTA** folder:
+**2. Unzip it anywhere.** You get a tidy **VTTA** folder. The launcher's name says which system it's for, so there's nothing to guess:
+
+| Windows | macOS | Linux |
+|---|---|---|
+| `VTTA/Start VTTA (Windows).bat` | `VTTA/Start VTTA (Mac).command` | `VTTA/Start VTTA (Linux).sh` |
+
 ```
 VTTA/
-  Start VTTA          ← the only thing you need to open
-  Read Me First.txt
-  app/                the program; its settings and private Python live here too
+  Start VTTA (Windows).bat     ← the only thing you need to open
+  Read Me First.txt            short instructions for your system
+  app/                         the program; its settings and private Python live here too
+    Troubleshoot VTTA (Windows).bat   options menu (see below)
 ```
-**3. Open `Start VTTA`.** On a Mac, the first time, right-click it and choose **Open**, because macOS blocks downloaded scripts. On Linux, run `./start-vtta.sh`.
+
+**3. Open your `Start VTTA (...)` file.**
+- **Windows:** double-click it. If SmartScreen warns, choose **More info → Run anyway**.
+- **Mac:** double-click it. The very first time, macOS blocks downloaded scripts, so right-click it, choose **Open**, then **Open** again.
+- **Linux:** run `./"Start VTTA (Linux).sh"`.
 
 The **first start** sets everything up inside the folder. It needs internet, downloads about 1 GB, and takes a few minutes:
 - It finds Python 3.10–3.13. On Windows it offers to install Python 3.12 for you if it's missing.
 - It creates a private environment and installs the components.
 - On Windows it offers a desktop shortcut with the VTTA icon.
 
-After that, **Start VTTA** opens the app right away.
+After that, the same file opens VTTA right away.
 
-**Updates:** VTTA checks once a day whether a newer version is out. When one is, an **Update to x.y** button appears in the status bar. One click downloads it, checks it against its published checksum, installs it (including the launcher), keeps your settings, history and models, and restarts VTTA. You can also use **Help → Check for Updates…**, or turn the daily check off in **Settings → General**.
+**Updates:** VTTA checks once a day whether a newer version is out. When one is, an **Update to x.y** button appears in the status bar. One click downloads it, checks it against its published checksum, installs it (including the launchers), keeps your settings, history and models, and restarts VTTA. You can also use **Help → Check for Updates…**, or turn the daily check off in **Settings → General**.
 
-Using the **Code → Download ZIP** copy instead? That works too: open the `Start VTTA` file for your system, and it hides the other systems' launchers.
+**Options & troubleshooting:** open `app/Troubleshoot VTTA (...)` or use **Help → Troubleshooting & Options…** inside VTTA. A numbered menu lets you:
 
-Launcher options: add `debug` to keep a console open and see errors, or `setup` to repair the installation (e.g. `"Start VTTA.bat" debug`).
+| Option | When to use it |
+|---|---|
+| Start VTTA | normal start |
+| Start VTTA and show its messages | VTTA won't open, or you want to report a problem |
+| Repair VTTA | reinstall its components (fixes most setup problems) |
+| Create a desktop shortcut | Windows only; adds VTTA with its icon to the desktop |
+| Open the VTTA folder | find its files |
+| Free disk space | remove the ~1 GB of components; they're set up again on the next start |
+
+Power users can pass `menu`, `debug` or `setup` to the Start file directly.
+
+**Move or uninstall:** keep the folder together, and move it whenever you like. To uninstall, turn off **Launch at sign-in** in Settings if you used it, then delete the folder. Nothing else is left behind.
+
+Using the **Code → Download ZIP** copy instead? It contains all three Start files. Open the one for your system and it hides the other two.
 
 ### Platform notes
 - **macOS:** the launcher installs PortAudio with [Homebrew](https://brew.sh) if Homebrew is present (it's needed to build PyAudio). If Homebrew isn't installed, install it first and run `brew install portaudio`. Use Python from python.org; Homebrew Python also works if `python-tk` is installed.
@@ -92,7 +115,7 @@ If recording stops too early or never stops on its own, adjust **Settings → Re
 
 ## 🗂️ What VTTA stores (all inside the app folder)
 ```
-Start VTTA                   launcher (in the app/ folder's parent for release downloads)
+Start VTTA (Windows).bat     launcher (one per system; in the app/ folder's parent for release downloads)
 Voice_To_Text_Assistant.py
 assets/                      icon
 .venv/                       private Python environment (created on first start)

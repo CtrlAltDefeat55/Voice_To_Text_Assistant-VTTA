@@ -6,11 +6,13 @@ These steps set up **VTTA** on **Windows 10/11**.
 
 ## Easiest way
 1. Download [**VTTA-Windows.zip**](https://github.com/CtrlAltDefeat55/Voice_To_Text_Assistant-VTTA/releases/latest/download/VTTA-Windows.zip) and unzip it anywhere (e.g. `Documents\VTTA`).
-2. Double-click **`Start VTTA.bat`**.
+2. Open the **VTTA** folder and double-click **`Start VTTA (Windows).bat`**.
    - The first start sets up everything inside the folder; it needs internet and takes a few minutes.
    - If Python isn't installed, it offers to install Python 3.12 for your account.
    - At the end it offers a desktop shortcut.
-3. After that, start VTTA from the shortcut or `Start VTTA.bat`; it opens straight away. VTTA offers updates itself (status bar → **Update**).
+3. After that, start VTTA from the desktop shortcut or `Start VTTA (Windows).bat`; it opens straight away. VTTA offers updates itself (status bar → **Update**).
+
+**Options & troubleshooting:** `app\Troubleshoot VTTA (Windows).bat`, or **Help → Troubleshooting & Options…** in VTTA. Use it to start with messages shown, repair, create a desktop shortcut, or free disk space.
 
 If Windows SmartScreen warns about the file, click **More info → Run anyway**. The `.bat` is plain text, so you can open it in Notepad to see exactly what it does.
 
