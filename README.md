@@ -89,8 +89,8 @@ python Voice_To_Text_Assistant.py
 Build the release packages yourself with `python tools/build_release.py`. It writes `VTTA-Windows.zip`, `VTTA-macOS.zip`, `VTTA-Linux.zip` and `SHA256SUMS.txt` to `dist/`.
 
 To publish a release:
-1. Bump `APP_VERSION` in `Voice_To_Text_Assistant.py`.
-2. Push a matching tag, e.g. `v2.1`. GitHub Actions builds the packages and attaches them to the release.
+1. Bump `APP_VERSION` in `Voice_To_Text_Assistant.py` on `main`.
+2. On GitHub, open **Actions → Release package → Run workflow**, tick **publish**, and run it. It builds the packages, creates the `vX.Y` tag, and publishes the release with download instructions. Pushing a matching `vX.Y` tag does the same.
 3. Installed copies offer the update the next day, or right away via **Check for Updates**.
 
 ## ⌨️ Using it

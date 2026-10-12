@@ -3,12 +3,18 @@ name: Release package
 # Builds the one-download packages: VTTA-Windows.zip, VTTA-macOS.zip, VTTA-Linux.zip
 # and SHA256SUMS.txt (used by the in-app updater to verify downloads).
 # - Every run uploads them as a workflow artifact.
-# - Pushing a tag like "v2.1" publishes them on the Releases page. The tag must
-#   match APP_VERSION in Voice_To_Text_Assistant.py.
+# - To publish a release: bump APP_VERSION in Voice_To_Text_Assistant.py on main, then
+#   either Actions > "Release package" > Run workflow with "publish" ticked (creates the
+#   vX.Y tag for you), or push a tag "vX.Y" that matches APP_VERSION.
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish a release for the current APP_VERSION (creates tag vX.Y)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -31,12 +37,18 @@ jobs:
             bash -n "$f"
           done
 
+      - name: Read APP_VERSION
+        id: ver
+        run: |
+          app_version=$(sed -n 's/^APP_VERSION = "\(.*\)"/\1/p' Voice_To_Text_Assistant.py)
+          if [ -z "$app_version" ]; then echo "::error::APP_VERSION not found"; exit 1; fi
+          echo "version=$app_version" >> "$GITHUB_OUTPUT"
+
       - name: Tag matches APP_VERSION
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          app_version=$(sed -n 's/^APP_VERSION = "\(.*\)"/\1/p' Voice_To_Text_Assistant.py)
-          if [ "${GITHUB_REF_NAME#v}" != "$app_version" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match APP_VERSION $app_version"
+          if [ "${GITHUB_REF_NAME#v}" != "${{ steps.ver.outputs.version }}" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match APP_VERSION ${{ steps.ver.outputs.version }}"
             exit 1
           fi
 
@@ -49,8 +61,22 @@ jobs:
           path: dist/*
 
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publish
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: VTTA ${{ steps.ver.outputs.version }}
           files: dist/*
           generate_release_notes: true
+          body: |
+            ## Download
+            Pick the file for your computer, unzip it, and open the **Start VTTA** file inside the VTTA folder.
+
+            | Windows | macOS | Linux |
+            |---|---|---|
+            | **VTTA-Windows.zip** → `Start VTTA (Windows).bat` | **VTTA-macOS.zip** → `Start VTTA (Mac).command` (first time: right-click → Open) | **VTTA-Linux.zip** → `Start VTTA (Linux).sh` |
+
+            The first start sets everything up inside the folder (internet, about 1 GB, a few minutes); after that VTTA opens right away.
+            Already using VTTA? It offers this update in its status bar, or use **Help → Check for Updates**.
+            `SHA256SUMS.txt` lets you (and the updater) verify the downloads.
