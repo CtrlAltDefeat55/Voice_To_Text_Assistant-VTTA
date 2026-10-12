@@ -1,0 +1,56 @@
+name: Release package
+
+# Builds the one-download packages: VTTA-Windows.zip, VTTA-macOS.zip, VTTA-Linux.zip
+# and SHA256SUMS.txt (used by the in-app updater to verify downloads).
+# - Every run uploads them as a workflow artifact.
+# - Pushing a tag like "v2.1" publishes them on the Releases page. The tag must
+#   match APP_VERSION in Voice_To_Text_Assistant.py.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check the app and launchers
+        run: |
+          python -m py_compile Voice_To_Text_Assistant.py tools/build_release.py
+          for f in tools/launcher.sh "Start VTTA (Mac).command" "Start VTTA (Linux).sh" \
+                   "tools/Troubleshoot VTTA (Mac).command" "tools/Troubleshoot VTTA (Linux).sh"; do
+            bash -n "$f"
+          done
+
+      - name: Tag matches APP_VERSION
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          app_version=$(sed -n 's/^APP_VERSION = "\(.*\)"/\1/p' Voice_To_Text_Assistant.py)
+          if [ "${GITHUB_REF_NAME#v}" != "$app_version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match APP_VERSION $app_version"
+            exit 1
+          fi
+
+      - name: Build packages
+        run: python tools/build_release.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VTTA-packages
+          path: dist/*
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

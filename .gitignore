@@ -55,3 +55,7 @@ assets/**/*.xcf
 # If you produce Windows installers or binaries, don't commit them:
 *.exe
 *.msi
+
+# ---- VTTA runtime data (settings, history, models, private browser) ----
+VoiceFlow_App_Files/
+start_minimized.bat
