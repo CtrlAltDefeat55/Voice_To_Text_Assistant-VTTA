@@ -10,8 +10,14 @@ rem
 rem    "Start VTTA.bat" debug   - run with this console open to see errors
 rem    "Start VTTA.bat" setup   - repeat the setup (repair)
 rem ==========================================================================
-cd /d "%~dp0"
+rem Release downloads keep the app in an "app" subfolder; a source checkout keeps it here.
+set "LAUNCHDIR=%~dp0"
 set "APPDIR=%~dp0"
+if exist "%~dp0app\Voice_To_Text_Assistant.py" set "APPDIR=%~dp0app\"
+cd /d "%APPDIR%"
+rem In a full source download, hide the macOS/Linux launchers so only this one shows.
+if exist "%LAUNCHDIR%Start VTTA.command" attrib +h "%LAUNCHDIR%Start VTTA.command" >nul 2>&1
+if exist "%LAUNCHDIR%start-vtta.sh" attrib +h "%LAUNCHDIR%start-vtta.sh" >nul 2>&1
 set "VENV=%APPDIR%.venv"
 set "VPY=%VENV%\Scripts\python.exe"
 set "VPYW=%VENV%\Scripts\pythonw.exe"

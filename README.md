@@ -18,19 +18,31 @@ A lightweight desktop dictation helper for **Windows and macOS** (Linux works to
 - **Launch at sign-in** (Windows, macOS, Linux) and a tray icon (Windows/Linux) or Dock icon (macOS)
 
 ## 🚀 Quick start (one download)
-1. Download **`VTTA-<version>.zip`** from the [Releases page](../../releases/latest) (or **Code → Download ZIP**).
-2. Unzip it anywhere. You get one **VTTA** folder; keep everything in it together.
-3. Start it:
-   - **Windows:** double-click **`Start VTTA.bat`**
-   - **macOS:** double-click **`Start VTTA.command`**. The first time, right-click it and choose **Open**, because macOS blocks downloaded scripts.
-   - **Linux:** run **`./start-vtta.sh`**
+**1. Download the file for your computer:**
+
+| Windows | macOS | Linux |
+|---|---|---|
+| [**VTTA-Windows.zip**](https://github.com/CtrlAltDefeat55/Voice_To_Text_Assistant-VTTA/releases/latest/download/VTTA-Windows.zip) | [**VTTA-macOS.zip**](https://github.com/CtrlAltDefeat55/Voice_To_Text_Assistant-VTTA/releases/latest/download/VTTA-macOS.zip) | [**VTTA-Linux.zip**](https://github.com/CtrlAltDefeat55/Voice_To_Text_Assistant-VTTA/releases/latest/download/VTTA-Linux.zip) |
+
+**2. Unzip it anywhere.** You get a tidy **VTTA** folder:
+```
+VTTA/
+  Start VTTA          ← the only thing you need to open
+  Read Me First.txt
+  app/                the program; its settings and private Python live here too
+```
+**3. Open `Start VTTA`.** On a Mac, the first time, right-click it and choose **Open**, because macOS blocks downloaded scripts. On Linux, run `./start-vtta.sh`.
 
 The **first start** sets everything up inside the folder. It needs internet, downloads about 1 GB, and takes a few minutes:
 - It finds Python 3.10–3.13. On Windows it offers to install Python 3.12 for you if it's missing.
-- It creates a private environment in `.venv` and installs the components.
+- It creates a private environment and installs the components.
 - On Windows it offers a desktop shortcut with the VTTA icon.
 
-After that, **Start VTTA** opens the app right away. When you update VTTA, it installs only what's new.
+After that, **Start VTTA** opens the app right away.
+
+**Updates:** VTTA checks once a day whether a newer version is out. When one is, an **Update to x.y** button appears in the status bar. One click downloads it, checks it against its published checksum, installs it (including the launcher), keeps your settings, history and models, and restarts VTTA. You can also use **Help → Check for Updates…**, or turn the daily check off in **Settings → General**.
+
+Using the **Code → Download ZIP** copy instead? That works too: open the `Start VTTA` file for your system, and it hides the other systems' launchers.
 
 Launcher options: add `debug` to keep a console open and see errors, or `setup` to repair the installation (e.g. `"Start VTTA.bat" debug`).
 
@@ -51,7 +63,12 @@ python -m venv .venv
 pip install -r requirements.txt
 python Voice_To_Text_Assistant.py
 ```
-Build the release ZIP yourself with `python tools/build_release.py` (the output goes to `dist/`). Pushing a `v*` tag builds it and attaches it to a GitHub release automatically.
+Build the release packages yourself with `python tools/build_release.py`. It writes `VTTA-Windows.zip`, `VTTA-macOS.zip`, `VTTA-Linux.zip` and `SHA256SUMS.txt` to `dist/`.
+
+To publish a release:
+1. Bump `APP_VERSION` in `Voice_To_Text_Assistant.py`.
+2. Push a matching tag, e.g. `v2.1`. GitHub Actions builds the packages and attaches them to the release.
+3. Installed copies offer the update the next day, or right away via **Check for Updates**.
 
 ## ⌨️ Using it
 | Action | How |
@@ -75,8 +92,8 @@ If recording stops too early or never stops on its own, adjust **Settings → Re
 
 ## 🗂️ What VTTA stores (all inside the app folder)
 ```
+Start VTTA                   launcher (in the app/ folder's parent for release downloads)
 Voice_To_Text_Assistant.py
-Start VTTA.bat / Start VTTA.command / start-vtta.sh   launchers
 assets/                      icon
 .venv/                       private Python environment (created on first start)
 VoiceFlow_App_Files/
@@ -101,6 +118,7 @@ start_minimized.bat          Windows only, created when "Launch at sign-in" is o
 - Audio is recorded only while you dictate, kept in memory, and never saved to disk.
 - Transcription runs locally. **Voice commands** (off by default) keep the microphone open and send short clips to Google's online recognizer.
 - Pasting uses the clipboard and simulates `Ctrl/Cmd+V` — only after hotkey dictation, and only when **Paste into the active app** is on.
+- The daily update check is one request to `api.github.com` with no personal data. Turn it off in **Settings → General**.
 
 See [`SECURITY.md`](./SECURITY.md).
 

@@ -11,8 +11,10 @@
 #    ./start-vtta.sh debug   - run in this terminal to see errors
 #    ./start-vtta.sh setup   - repeat the setup (repair)
 # ==========================================================================
-cd "$(dirname "$0")" || exit 1
-APP_DIR="$(pwd)"
+HERE="$(cd "$(dirname "$0")" && pwd)" || exit 1
+# Release downloads keep the app in an "app" subfolder; a source checkout keeps it next to this script.
+if [ -f "$HERE/app/Voice_To_Text_Assistant.py" ]; then APP_DIR="$HERE/app"; else APP_DIR="$HERE"; fi
+cd "$APP_DIR" || exit 1
 VENV="$APP_DIR/.venv"
 VPY="$VENV/bin/python"
 REQ="$APP_DIR/requirements.txt"
@@ -124,6 +126,11 @@ setup() {
     echo
     say "Setup complete."
 }
+
+# In a full source download on macOS, hide the launchers Finder users don't need.
+if [ "$OS" = "Darwin" ] && [ -f "$HERE/Start VTTA.bat" ]; then
+    chflags hidden "$HERE/Start VTTA.bat" "$HERE/start-vtta.sh" 2>/dev/null
+fi
 
 if [ "$1" = "setup" ] || ! venv_ok; then
     setup

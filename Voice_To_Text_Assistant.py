@@ -26,11 +26,14 @@ import wave
 import shutil
 import sqlite3
 import hashlib
+import zipfile
 import plistlib
 import importlib
+import re
 import subprocess
 import traceback
 import webbrowser
+import urllib.error
 import urllib.request
 from urllib.parse import quote_plus
 from collections import deque
@@ -70,6 +73,7 @@ pystray = None if IS_MAC else _optional_import("pystray")
 APP_NAME = "VoiceFlowAssistant"          # kept for the existing Startup shortcut name
 APP_TITLE = "VTTA — Voice to Text Assistant"
 APP_VERSION = "2.0"
+GITHUB_REPO = "CtrlAltDefeat55/Voice_To_Text_Assistant-VTTA"   # where updates are published
 DATA_DIR_NAME = "VoiceFlow_App_Files"     # kept so existing config/history are found
 
 SAMPLE_RATE = 16000
@@ -117,6 +121,8 @@ DEFAULT_CONFIG = {
     "hotkey_self_refresh_minutes": 60,   # periodically re-register hotkeys (0 = only after sleep)
     "wake_gap_seconds": 180,             # if sleep/hibernation gap is detected, refresh
     "enable_voice_commands": False,      # Google voice commands (default OFF)
+    "check_updates": True,               # one small request to GitHub at most once a day
+    "last_update_check": 0,              # epoch seconds
 }
 
 # ---- Visual tokens -------------------------------------------------------------
@@ -581,6 +587,9 @@ class VoiceFlowAssistant:
         self.start_voice_command_listener()
         self._start_tray()
         threading.Thread(target=self._sync_startup_entry, daemon=True).start()
+        self._update_info = None
+        self._updating = False
+        self.root.after(8000, self.check_for_updates)   # quietly, once a day at most
 
         self._refresh_state()
         self.root.deiconify()
@@ -982,6 +991,8 @@ class VoiceFlowAssistant:
         self.retry_btn = ttk.Button(sbar, text="Retry transcription", style="Link.TButton",
                                     command=self.retry_failed_job)
         self.details_btn = ttk.Button(sbar, text="Details", style="Link.TButton", command=self.show_diagnostics)
+        self.update_btn = ttk.Button(sbar, text="", style="Link.TButton", command=self.start_update)
+        Tooltip(self.update_btn, lambda: self._update_tooltip())
 
         body = ttk.Frame(self.root)
         body.pack(fill=tk.BOTH, expand=True, padx=px(18), pady=(px(16), px(12)))
@@ -1161,6 +1172,7 @@ class VoiceFlowAssistant:
         m.add_cascade(label="Tools", menu=tm)
         hm = tk.Menu(m, tearoff=False)
         hm.add_command(label="Shortcuts & Tips", command=self.show_help)
+        hm.add_command(label="Check for Updates\u2026", command=lambda: self.check_for_updates(manual=True))
         hm.add_command(label="About VTTA", command=self.show_about)
         m.add_cascade(label="Help", menu=hm)
         self.root.config(menu=m)
@@ -3115,6 +3127,254 @@ class VoiceFlowAssistant:
             self._post(self._diag, "Startup entry refresh failed", "", e)
 
     # ======================================================================
+    # Updates (GitHub releases; checked at most once a day, installed only when asked)
+    # ======================================================================
+
+    @staticmethod
+    def _version_tuple(v):
+        return tuple(int(n) for n in re.findall(r"\d+", str(v))[:4]) or (0,)
+
+    def _platform_name(self):
+        return "Windows" if IS_WIN else ("macOS" if IS_MAC else "Linux")
+
+    def _layout(self):
+        """(launcher directory, launcher file). Release downloads keep the app in an 'app' subfolder."""
+        name = {"Windows": "Start VTTA.bat", "macOS": "Start VTTA.command", "Linux": "start-vtta.sh"}[
+            self._platform_name()]
+        parent = self.script_dir.parent
+        if self.script_dir.name == "app" and (parent / name).exists():
+            return parent, parent / name
+        return self.script_dir, self.script_dir / name
+
+    def _update_blocker(self):
+        if getattr(sys, "frozen", False):
+            return "This is a packaged build; download the new version from the Releases page."
+        if (self.script_dir / ".git").exists():
+            return "This copy is a Git checkout; update it with “git pull”."
+        return None
+
+    def _update_tooltip(self):
+        info = self._update_info
+        if not info:
+            return ""
+        notes = info.get("notes", "").strip()
+        return (f"Download and install VTTA {info['version']} ({info['size'] / 1e6:.1f} MB). Your settings, "
+                "history and models are kept." + (f"\n\n{self._clip(notes, 400)}" if notes else ""))
+
+    def check_for_updates(self, manual=False):
+        if self._shutting_down or self._updating:
+            return
+        if not manual:
+            if not self.config.get("check_updates", True):
+                return
+            if time.time() - float(self.config.get("last_update_check") or 0) < 20 * 3600:
+                return
+        else:
+            self.update_status("Checking for updates…")
+        threading.Thread(target=self._update_check_worker, args=(manual,), name="vtta-update-check",
+                         daemon=True).start()
+
+    def _update_check_worker(self, manual):
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+        try:
+            req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json",
+                                                       "User-Agent": f"VTTA/{APP_VERSION}"})
+            with urllib.request.urlopen(req, timeout=15) as r:
+                data = json.load(r)
+            self._post(self._on_update_info, data, None, manual)
+        except urllib.error.HTTPError as e:
+            self._post(self._on_update_info, None if e.code == 404 else None, None if e.code == 404 else e, manual)
+        except Exception as e:
+            self._post(self._on_update_info, None, e, manual)
+
+    def _on_update_info(self, data, error, manual):
+        self.config["last_update_check"] = time.time()
+        self.save_config()
+        if error is not None:
+            self._diag("Update check failed", str(error), error)
+            if manual:
+                messagebox.showinfo("Check for updates", "Couldn’t reach GitHub to check for updates. "
+                                    "Check your internet connection and try again.", parent=self.root)
+                self.update_status("Update check failed.")
+            return
+        latest = (data or {}).get("tag_name", "")
+        if not data or self._version_tuple(latest) <= self._version_tuple(APP_VERSION):
+            if manual:
+                messagebox.showinfo("Check for updates", f"You have the latest version (VTTA {APP_VERSION}).",
+                                    parent=self.root)
+                self.update_status("VTTA is up to date.")
+            return
+        assets = {a.get("name"): a for a in data.get("assets", [])}
+        pkg = assets.get(f"VTTA-{self._platform_name()}.zip")
+        sums = assets.get("SHA256SUMS.txt")
+        if not pkg or not sums:
+            if manual:
+                messagebox.showinfo("Check for updates", f"VTTA {latest.lstrip('vV')} is out, but there’s no "
+                                    f"package for {self._platform_name()} yet.", parent=self.root)
+            return
+        self._update_info = {"version": latest.lstrip("vV"), "url": pkg["browser_download_url"],
+                             "name": pkg["name"], "size": pkg.get("size", 0),
+                             "sums_url": sums["browser_download_url"], "notes": data.get("body") or ""}
+        self.update_btn.configure(text=f"⬆ Update to {self._update_info['version']}")
+        if not self.update_btn.winfo_ismapped():
+            self.update_btn.pack(side=tk.RIGHT, padx=self.px(6))
+        self.update_status(f"VTTA {self._update_info['version']} is available.")
+        if manual:
+            self.start_update()
+
+    def start_update(self):
+        info = self._update_info
+        if not info or self._updating:
+            return
+        blocker = self._update_blocker()
+        if blocker:
+            messagebox.showinfo("Update VTTA", blocker, parent=self.root)
+            return
+        if self._rec or self._pending_jobs:
+            messagebox.showinfo("Update VTTA", "Finish the current recording or transcription first.",
+                                parent=self.root)
+            return
+        notes = self._clip(info["notes"].strip(), 600)
+        if not messagebox.askyesno(
+                "Update VTTA",
+                f"Update VTTA from {APP_VERSION} to {info['version']}?\n\n"
+                f"About {info['size'] / 1e6:.1f} MB is downloaded. Your settings, history and models are kept, "
+                "and VTTA restarts when it’s done." + (f"\n\nWhat’s new:\n{notes}" if notes else ""),
+                parent=self.root):
+            return
+        self._updating = True
+        self.update_btn.state(["disabled"])
+        self.update_status("Downloading the update…")
+        threading.Thread(target=self._update_worker, args=(info,), name="vtta-update", daemon=True).start()
+
+    def _update_worker(self, info):
+        staging = self.app_data_dir / "update"
+        try:
+            shutil.rmtree(staging, ignore_errors=True)
+            staging.mkdir(parents=True)
+            pkg = staging / info["name"]
+            sha = hashlib.sha256()
+            req = urllib.request.Request(info["url"], headers={"User-Agent": f"VTTA/{APP_VERSION}"})
+            with urllib.request.urlopen(req, timeout=30) as src, open(pkg, "wb") as out:
+                total = int(src.headers.get("Content-Length") or info.get("size") or 0)
+                done, last = 0, 0.0
+                while True:
+                    if self._shutdown.is_set():
+                        raise RuntimeError("cancelled because VTTA is closing")
+                    buf = src.read(1 << 16)
+                    if not buf:
+                        break
+                    out.write(buf)
+                    sha.update(buf)
+                    done += len(buf)
+                    if total and time.monotonic() - last > 0.2:
+                        last = time.monotonic()
+                        self._post(self.update_status, f"Downloading the update… {100 * done // total}%")
+            req = urllib.request.Request(info["sums_url"], headers={"User-Agent": f"VTTA/{APP_VERSION}"})
+            with urllib.request.urlopen(req, timeout=15) as r:
+                sums = r.read().decode("utf-8", "replace")
+            expected = {ln.split()[1].lstrip("*"): ln.split()[0].lower() for ln in sums.splitlines()
+                        if len(ln.split()) == 2}
+            if expected.get(info["name"]) != sha.hexdigest():
+                raise RuntimeError("the download didn’t match its published checksum")
+            self._post(self.update_status, "Installing the update…")
+            self._install_update(pkg, staging)
+            shutil.rmtree(staging, ignore_errors=True)
+            self._post(self._on_update_installed, info["version"])
+        except Exception as e:
+            shutil.rmtree(staging, ignore_errors=True)
+            self._post(self._on_update_failed, e)
+
+    def _install_update(self, pkg, staging):
+        """Copy the new files over the old ones. Settings, history, models and the private Python
+        environment are never touched. If anything fails, every replaced file is restored."""
+        launcher_dir, _launcher = self._layout()
+        protected = [self.app_data_dir.resolve(), (self.script_dir / ".venv").resolve()]
+        plan = []   # (zip member, destination, executable)
+        with zipfile.ZipFile(pkg) as zf:
+            for m in zf.infolist():
+                if m.is_dir():
+                    continue
+                parts = Path(m.filename).parts
+                if len(parts) < 2 or parts[0] != "VTTA" or ".." in parts or Path(m.filename).is_absolute():
+                    raise RuntimeError(f"unexpected file in package: {m.filename}")
+                rel = Path(*parts[1:])
+                dest = (self.script_dir / Path(*rel.parts[1:])) if rel.parts[0] == "app" else (launcher_dir / rel)
+                dest = Path(os.path.abspath(dest))
+                if any(dest == p or p in dest.parents for p in protected):
+                    continue
+                if not any(dest.parent == d or d in dest.parents for d in (self.script_dir, launcher_dir)):
+                    raise RuntimeError(f"package file outside the app folder: {m.filename}")
+                plan.append((m, dest, bool((m.external_attr >> 16) & 0o111)))
+            if not any(d.name == "Voice_To_Text_Assistant.py" for _m, d, _x in plan):
+                raise RuntimeError("the package doesn’t contain VTTA")
+            backup = staging / "previous"
+            done = []   # (dest, backup or None if the file is new)
+            try:
+                for i, (m, dest, executable) in enumerate(plan):
+                    saved = None
+                    if dest.exists():
+                        saved = backup / str(i)
+                        saved.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(dest, saved)
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    tmp = dest.with_name(dest.name + ".new")
+                    with zf.open(m) as src, open(tmp, "wb") as out:
+                        shutil.copyfileobj(src, out)
+                    if executable and not IS_WIN:
+                        os.chmod(tmp, 0o755)
+                    os.replace(tmp, dest)
+                    done.append((dest, saved))
+            except Exception:
+                for dest, saved in reversed(done):
+                    try:
+                        if saved is None:
+                            dest.unlink(missing_ok=True)
+                        else:
+                            shutil.copy2(saved, dest)
+                    except Exception:
+                        pass
+                raise
+
+    def _on_update_installed(self, version):
+        self._updating = False
+        if self.update_btn.winfo_ismapped():
+            self.update_btn.pack_forget()
+        self.sounds.play("done")
+        self.update_status(f"VTTA {version} is installed. Restart VTTA to use it.")
+        if messagebox.askyesno("Update installed", f"VTTA {version} is installed.\n\nRestart VTTA now? "
+                               "If the new version needs extra components, the launcher installs them first.",
+                               parent=self.root):
+            self.restart_app()
+
+    def _on_update_failed(self, error):
+        self._updating = False
+        self.update_btn.state(["!disabled"])
+        self.handle_error("Update failed", "The update couldn’t be installed, so nothing was changed. "
+                          "Check your internet connection and try again.", details=error)
+
+    def restart_app(self):
+        """Start a fresh copy through the platform launcher (which also installs any new components), then quit."""
+        _dir, launcher = self._layout()
+        try:
+            if launcher.exists():
+                if IS_WIN:
+                    subprocess.Popen(["cmd", "/c", "start", "", str(launcher)], cwd=str(launcher.parent),
+                                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                elif IS_MAC:
+                    subprocess.Popen(["open", str(launcher)])
+                else:
+                    subprocess.Popen(["/bin/bash", str(launcher)], cwd=str(launcher.parent),
+                                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                     stderr=subprocess.DEVNULL, start_new_session=True)
+            else:
+                subprocess.Popen(self._launch_command(), cwd=str(self.script_dir), start_new_session=True)
+        except Exception as e:
+            self.handle_error("Restart failed", "Please start VTTA again yourself.", details=e)
+            return
+        self.quit_app()
+
+    # ======================================================================
     # Mainloop
     # ======================================================================
 
@@ -3218,6 +3478,13 @@ class SettingsDialog:
         self.check("gen", "start_minimized", "Start minimized", cfg["start_minimized"])
         signin = "Launch VTTA when I log in" if IS_MAC else "Launch VTTA when I sign in"
         self.check("gen", "_launch_at_startup", signin, app.startup_entry_exists())
+        self.section("gen", "Updates")
+        self.check("gen", "check_updates", "Check for updates when VTTA starts", cfg["check_updates"],
+                   "At most once a day, VTTA asks GitHub whether a newer version exists. Updates are only "
+                   "installed when you click Update.")
+        upd = ttk.Button(self.tabs["gen"][0], text="Check now", style="Small.TButton",
+                         command=lambda: app.check_for_updates(manual=True))
+        upd.grid(row=self.next_row("gen"), column=0, sticky="w", padx=(px(25), 0), pady=(0, px(4)))
 
         # ---- Recording ----
         self.section("rec", "Microphone")
