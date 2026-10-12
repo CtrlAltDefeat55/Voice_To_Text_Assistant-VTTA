@@ -1,95 +1,110 @@
-# Voice To Text Assistant (VTTA) 🎤→📝 (Dictation Mode)
+# Voice To Text Assistant (VTTA) 🎤→📝
 
-A lightweight Tkinter desktop app that records short snippets, transcribes them with Whisper, and (optionally) pastes the text right where your cursor is. It also supports “dictate a web search” and includes a tiny blinking **recording overlay** so you always know what’s happening.
+<img src="assets/vtta.png" width="72" align="right" alt="VTTA icon" />
 
-<img width="697" height="879" alt="UI_SpeechtoText" src="https://github.com/user-attachments/assets/8722edb8-3077-4735-916c-e28c364eac9c" />
+A lightweight desktop dictation helper for **Windows and macOS** (Linux works too). Press a hotkey, speak, press it again — your words are transcribed **locally** with OpenAI Whisper and pasted where your cursor is. You can also dictate a web search.
+
+<img src="assets/screenshot.png" width="560" alt="VTTA main window" />
 
 ## ✨ Features
-- **One‑tap dictation** with a compact overlay (blink while recording)
-- **Paste to cursor** after transcription (toggle)
-- **Dictate a web search** → opens results in your browser
-- **Self‑healing hotkeys** that re‑register after sleep
-- **History (optional)** stored locally in SQLite; off by default
-- **Configurable Whisper model & language**
-- **Windows Startup integration** (creates a launcher .bat)
-- **Voice commands (optional)** — “start/stop dictation” & “search now” using Google’s recognizer; **OFF by default** and configurable in **Settings**.
+- **Hotkey dictation anywhere** — `Ctrl+Shift+R` to start/stop, text is pasted into the app you were typing in
+- **Dictate a web search** — `Ctrl+Shift+S`, results open in a private window or your default browser
+- **Start Dictation button** — records until you pause, then shows the text in the window
+- **Clear feedback** — status badge, live mic level, a small on-screen indicator while recording/transcribing, and very quiet sound cues (adjustable or off)
+- **Runs offline** — speech never leaves your computer (unless you turn on optional voice commands)
+- **Low profile** — nothing polls while idle; the microphone is opened only while you record; the model can free its memory after a period of inactivity
+- **Portable** — settings, history, models and the optional private browser all live in one folder next to the script
+- **History (optional)** — searchable, stored locally in SQLite; off by default
+- **Launch at sign-in** (Windows, macOS, Linux) and a tray icon (Windows/Linux) or Dock icon (macOS)
 
-> ⚠️ This app uses your microphone. Optional voice commands use Google’s online recognizer. See **Security & Privacy** below.
-
-## 🚀 Quick Start
-
-
-### Firstly, Open a terminal **in the project folder** then:
+## 🚀 Quick start
+Open a terminal **in the project folder**, then:
 
 ### Windows 10/11
 ```powershell
-# 1) Create and activate a virtual environment
 py -3 -m venv venv
 .\venv\Scripts\activate
-
-# 2) Install dependencies
 pip install -r requirements.txt
-python -m playwright install   # installs a compatible browser driver
-
-# 3) (Recommended) Install FFmpeg for Whisper
-# Download and add ffmpeg to PATH (check your platform guide)
-
-# 4) Run
 python Voice_To_Text_Assistant.py
 ```
 
-### macOS (Intel/Apple Silicon)
+### macOS (Intel / Apple Silicon)
 ```bash
+brew install portaudio            # needed to build PyAudio
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-python -m playwright install
-# Install FFmpeg (e.g., brew install ffmpeg) and PortAudio (brew install portaudio)
 python Voice_To_Text_Assistant.py
 ```
+Use Python from python.org (includes Tk), or with Homebrew Python also run `brew install python-tk`.
 
-### Linux (Ubuntu/Debian‑like)
+On first use macOS asks for permissions. Allow the app you launch VTTA from (Terminal, or Python) under **System Settings → Privacy & Security**:
+- **Microphone** — to record
+- **Accessibility** and **Input Monitoring** — for the global hotkeys and for pasting
+
+Restart VTTA after granting them.
+
+### Linux (Ubuntu/Debian-like)
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-sudo apt update && sudo apt install -y ffmpeg python3-tk portaudio19-dev \
-  xclip xsel scrot                 # helpers for Tk/Audio/Clipboard/Screenshots
+sudo apt install -y python3-tk portaudio19-dev xclip
+python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-python -m playwright install
 python Voice_To_Text_Assistant.py
 ```
-More detail: **[INSTALL-Windows.md](./INSTALL-Windows.md)**
+The `keyboard` package needs root on Linux for global hotkeys; without it, use the window's buttons.
 
-## ⌨️ Default Hotkeys
-- **Ctrl+Shift+R** — Start/Stop dictation (paste to cursor if enabled)
-- **Ctrl+Shift+S** — Dictate a **search** query (opens results)
+**FFmpeg is no longer needed** — audio goes straight from memory to Whisper.
 
-> You can change hotkeys and other options in **Settings**.
+The first launch downloads the Whisper model you pick (`base` ≈ 140 MB) into `VoiceFlow_App_Files/models`. If you already have it in Whisper's shared cache (`~/.cache/whisper`), it is copied instead of downloaded.
 
-## 🗣️ Voice Commands (optional)
-Voice commands are **OFF by default**. To enable:
-1. Open **Settings** → check **Enable Voice Commands (Google recognizer)**.
-2. Once enabled, you can say:
-   - “**start dictation**” / “**stop dictation**”
-   - “**search now**” (starts a quick voice search)
-> Note: This uses Google’s online speech recognizer (network access required).
+## ⌨️ Using it
+| Action | How |
+|---|---|
+| Dictate & paste | `Ctrl+Shift+R`, speak, `Ctrl+Shift+R` again |
+| Dictate a web search | `Ctrl+Shift+S`, speak, `Ctrl+Shift+S` again |
+| Switch what happens | Stop with the *other* hotkey (start with R, stop with S → search) |
+| Record in the window | **Start Dictation** — stops automatically when you pause |
+| Throw a recording away | **Discard** (appears while recording) |
+| History / Settings / Quit | `Ctrl+H` / `Ctrl+,` / `Ctrl+Q` (`Cmd` on macOS) |
 
+Change hotkeys in **Settings → General** (click **Record** and press the keys).
+
+If recording stops too early or never stops on its own, adjust **Settings → Recording → Silence threshold**. The dark tick on the mic-level meter shows where it is.
+
+## ⚙️ Settings at a glance
+- **General** — hotkeys, sound cues and click sounds with volume and a Test button, recording-indicator position, close-to-tray/Dock, start minimized, launch at sign-in
+- **Recording** — microphone choice (listed only when you open Settings or click Refresh), auto-stop pause length and threshold, longest recording, free model memory after N idle minutes
+- **Web Search** — private Playwright window or your default browser, install the private browser into the app folder, custom Chromium browser, auto-close timer
+- **Advanced** — optional Google voice commands, hotkey timing and indicator timing
+
+## 🗂️ What VTTA stores (all inside the app folder)
+```
+Voice_To_Text_Assistant.py
+assets/                      icon
+VoiceFlow_App_Files/
+  config.json                settings
+  history.db                 only if "Save to history" is on
+  models/                    Whisper models you've used
+  browsers/                  only if you install the private browser here
+start_minimized.bat          Windows only, created when "Launch at sign-in" is on
+```
+- No log files, temp recordings or caches are written. Problems from the current session are kept in memory (**Tools → Diagnostics**) and cleared on exit.
+- The only thing outside the folder is the sign-in entry you opt into: Windows Startup shortcut, macOS LaunchAgent, or Linux autostart file.
+- You can move or rename the whole folder. On the next launch VTTA repoints its sign-in entry to the new location. A `venv` created inside the folder moves along with it on Windows. On macOS/Linux, recreate the venv after moving.
+- Older versions wrote `VoiceFlow_App_Files/error.log` and `temp_recording.wav`. VTTA no longer creates them, and you can delete them.
 
 ## 🛠️ Troubleshooting
-- **`pyaudio` install fails** → On Windows, try `pip install pipwin && pipwin install pyaudio`. On macOS, `brew install portaudio` first. On Linux, install `portaudio19-dev`.
-- **No audio device / permissions** → Allow microphone access for your terminal/app.
-- **`tkinter` not found** → Install your distro’s Tk package (e.g., `sudo apt install python3-tk`).
-- **Playwright won’t open** → Run `python -m playwright install`.
+- **`pyaudio` install fails** — Windows: `pip install pipwin && pipwin install pyaudio`. macOS: `brew install portaudio`. Linux: `sudo apt install portaudio19-dev`.
+- **Hotkeys do nothing** — the hotkey row in the window says why. On macOS grant Accessibility + Input Monitoring. **Tools → Reload Hotkeys** re-registers them.
+- **Private search window won't open** — **Settings → Web Search → Install into app folder**, or choose **My default browser**.
+- **Something failed** — click **Details** in the status bar (or **Tools → Diagnostics**) and use **Copy All** when reporting an issue.
 
-## 🔐 Security & Privacy (short)
-- **Microphone** is accessed **only** when you press the dictation hotkey (or while a recording is in progress).
-- **Voice commands (Google)** are **OFF by default**. When you enable them in **Settings**, a background listener waits for short phrases (“start/stop dictation”, “search now”) and uses Google’s online recognizer (network call).
-- **Clipboard & keyboard automation** are used only if you toggle **Write to cursor** (for pasting).
-- **Local history** (off by default) is saved to `VoiceFlow_App_Files/history.db` (or your OS Application Support folder if available).
+## 🔐 Privacy
+- Audio is recorded only while you dictate, kept in memory, and never saved to disk.
+- Transcription runs locally. **Voice commands** (off by default) keep the microphone open and send short clips to Google's online recognizer.
+- Pasting uses the clipboard and simulates `Ctrl/Cmd+V` — only after hotkey dictation, and only when **Paste into the active app** is on.
 
-To stay offline: leave **Enable Voice Commands** **unchecked** and use local Whisper-only dictation.
-
-See the full policy in [`SECURITY.md`](./SECURITY.md).
+See [`SECURITY.md`](./SECURITY.md).
 
 ## 🤝 Contributing
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md). Code of conduct: [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md).

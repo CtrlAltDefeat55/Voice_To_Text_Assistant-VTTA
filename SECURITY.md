@@ -10,13 +10,14 @@ Open an issue and include the word **SECURITY** in the title. Avoid posting sens
 This app:
 - **Records audio** from your microphone during dictation (hotkey/button).
 - Can **paste to your active window** using clipboard/keyboard automation (optional).
-- Can **open a web browser** to a search page using Playwright (when requested).
+- Can **open a web browser** to a search page (a private Playwright window or your default browser) when requested.
 - Can **store transcription history locally** in SQLite if you enable it.
+- Keeps audio **in memory only**; it does not write recordings or log files to disk.
 - **Voice command keywords** (“start dictation”, “stop dictation”, “search now”) use Google’s **online** recognizer **only when** you enable **Enable Voice Commands** in Settings. This is **OFF by default**.
 
 Recommendations:
-- Keep “Record History” **off** if you don’t want local text saved.
-- Verify the active window before enabling “Write to cursor.”
+- Keep “Save to history” **off** if you don’t want local text saved.
+- Verify the active window before relying on “Paste into the active app after hotkey dictation.”
 - Review OS microphone & accessibility permissions.
 - Prefer **offline-only** usage by keeping **Enable Voice Commands** **off**.
 
