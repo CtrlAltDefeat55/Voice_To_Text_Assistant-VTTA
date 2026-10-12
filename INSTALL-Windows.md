@@ -4,6 +4,18 @@ These steps set up **VTTA** on **Windows 10/11**.
 
 > VTTA records short dictations, transcribes them locally with Whisper, and can paste the text where your cursor is. It can also dictate a web search.
 
+## Easiest way
+1. Download `VTTA-<version>.zip` from the GitHub **Releases** page and unzip it anywhere (e.g. `Documents\VTTA`).
+2. Double-click **`Start VTTA.bat`**.
+   - The first start sets up everything inside the folder; it needs internet and takes a few minutes.
+   - If Python isn't installed, it offers to install Python 3.12 for your account.
+   - At the end it offers a desktop shortcut.
+3. After that, start VTTA from the shortcut or `Start VTTA.bat`; it opens straight away.
+
+If Windows SmartScreen warns about the file, click **More info → Run anyway**. The `.bat` is plain text, so you can open it in Notepad to see exactly what it does.
+
+The manual steps below are only needed if you'd rather set it up yourself.
+
 ## 1) Install prerequisites
 - **Python 3.9+** — https://www.python.org/downloads/ (tick “Add python.exe to PATH”; the installer includes Tcl/Tk)
 - *(Optional)* **Git** for cloning — https://git-scm.com/

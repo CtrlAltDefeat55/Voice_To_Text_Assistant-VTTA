@@ -17,45 +17,41 @@ A lightweight desktop dictation helper for **Windows and macOS** (Linux works to
 - **History (optional)** — searchable, stored locally in SQLite; off by default
 - **Launch at sign-in** (Windows, macOS, Linux) and a tray icon (Windows/Linux) or Dock icon (macOS)
 
-## 🚀 Quick start
-Open a terminal **in the project folder**, then:
+## 🚀 Quick start (one download)
+1. Download **`VTTA-<version>.zip`** from the [Releases page](../../releases/latest) (or **Code → Download ZIP**).
+2. Unzip it anywhere. You get one **VTTA** folder; keep everything in it together.
+3. Start it:
+   - **Windows:** double-click **`Start VTTA.bat`**
+   - **macOS:** double-click **`Start VTTA.command`**. The first time, right-click it and choose **Open**, because macOS blocks downloaded scripts.
+   - **Linux:** run **`./start-vtta.sh`**
 
-### Windows 10/11
-```powershell
-py -3 -m venv venv
-.\venv\Scripts\activate
-pip install -r requirements.txt
-python Voice_To_Text_Assistant.py
-```
+The **first start** sets everything up inside the folder. It needs internet, downloads about 1 GB, and takes a few minutes:
+- It finds Python 3.10–3.13. On Windows it offers to install Python 3.12 for you if it's missing.
+- It creates a private environment in `.venv` and installs the components.
+- On Windows it offers a desktop shortcut with the VTTA icon.
 
-### macOS (Intel / Apple Silicon)
+After that, **Start VTTA** opens the app right away. When you update VTTA, it installs only what's new.
+
+Launcher options: add `debug` to keep a console open and see errors, or `setup` to repair the installation (e.g. `"Start VTTA.bat" debug`).
+
+### Platform notes
+- **macOS:** the launcher installs PortAudio with [Homebrew](https://brew.sh) if Homebrew is present (it's needed to build PyAudio). If Homebrew isn't installed, install it first and run `brew install portaudio`. Use Python from python.org; Homebrew Python also works if `python-tk` is installed.
+- **macOS permissions:** on first use, allow **Terminal** under **System Settings → Privacy & Security**:
+  - **Microphone** — to record
+  - **Accessibility** and **Input Monitoring** — for the global hotkeys and pasting
+
+  Then start VTTA again.
+- **Linux:** you may need `sudo apt install python3-venv python3-tk python3-dev portaudio19-dev xclip`. The `keyboard` package needs root for global hotkeys; without it, use the window's buttons.
+- **FFmpeg is not needed.** The first dictation downloads the Whisper model you picked (`base` ≈ 140 MB) into `VoiceFlow_App_Files/models`. If you already have it in Whisper's shared cache, it's copied instead of downloaded.
+
+### Manual setup (developers)
 ```bash
-brew install portaudio            # needed to build PyAudio
-python3 -m venv venv
-source venv/bin/activate
+python -m venv .venv
+# Windows: .venv\Scripts\activate     macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 python Voice_To_Text_Assistant.py
 ```
-Use Python from python.org (includes Tk), or with Homebrew Python also run `brew install python-tk`.
-
-On first use macOS asks for permissions. Allow the app you launch VTTA from (Terminal, or Python) under **System Settings → Privacy & Security**:
-- **Microphone** — to record
-- **Accessibility** and **Input Monitoring** — for the global hotkeys and for pasting
-
-Restart VTTA after granting them.
-
-### Linux (Ubuntu/Debian-like)
-```bash
-sudo apt install -y python3-tk portaudio19-dev xclip
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-python Voice_To_Text_Assistant.py
-```
-The `keyboard` package needs root on Linux for global hotkeys; without it, use the window's buttons.
-
-**FFmpeg is no longer needed** — audio goes straight from memory to Whisper.
-
-The first launch downloads the Whisper model you pick (`base` ≈ 140 MB) into `VoiceFlow_App_Files/models`. If you already have it in Whisper's shared cache (`~/.cache/whisper`), it is copied instead of downloaded.
+Build the release ZIP yourself with `python tools/build_release.py` (the output goes to `dist/`). Pushing a `v*` tag builds it and attaches it to a GitHub release automatically.
 
 ## ⌨️ Using it
 | Action | How |
@@ -80,7 +76,9 @@ If recording stops too early or never stops on its own, adjust **Settings → Re
 ## 🗂️ What VTTA stores (all inside the app folder)
 ```
 Voice_To_Text_Assistant.py
+Start VTTA.bat / Start VTTA.command / start-vtta.sh   launchers
 assets/                      icon
+.venv/                       private Python environment (created on first start)
 VoiceFlow_App_Files/
   config.json                settings
   history.db                 only if "Save to history" is on
@@ -90,7 +88,7 @@ start_minimized.bat          Windows only, created when "Launch at sign-in" is o
 ```
 - No log files, temp recordings or caches are written. Problems from the current session are kept in memory (**Tools → Diagnostics**) and cleared on exit.
 - The only thing outside the folder is the sign-in entry you opt into: Windows Startup shortcut, macOS LaunchAgent, or Linux autostart file.
-- You can move or rename the whole folder. On the next launch VTTA repoints its sign-in entry to the new location. A `venv` created inside the folder moves along with it on Windows. On macOS/Linux, recreate the venv after moving.
+- You can move or rename the whole folder. On the next launch VTTA repoints its sign-in entry to the new location. The launcher checks `.venv` on every start and rebuilds it if a move broke it.
 - Older versions wrote `VoiceFlow_App_Files/error.log` and `temp_recording.wav`. VTTA no longer creates them, and you can delete them.
 
 ## 🛠️ Troubleshooting
@@ -108,3 +106,6 @@ See [`SECURITY.md`](./SECURITY.md).
 
 ## 🤝 Contributing
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md). Code of conduct: [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md).
+
+## 📄 License
+From version 2.0, VTTA is licensed for **noncommercial use only** under the [PolyForm Noncommercial License 1.0.0](./LICENSE). Personal use, study, hobby projects and use by noncommercial organizations are fine. Commercial use needs separate permission from the author. Releases before 2.0 were published under the MIT License.

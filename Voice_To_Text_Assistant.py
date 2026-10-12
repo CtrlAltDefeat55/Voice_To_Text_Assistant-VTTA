@@ -2780,6 +2780,7 @@ class VoiceFlowAssistant:
             f"VTTA — Voice to Text Assistant {APP_VERSION}\n\n"
             "Speech is transcribed locally with OpenAI Whisper. Audio is kept in memory only and never saved "
             "to disk. Optional voice commands use Google’s online recognizer.\n\n"
+            "Licensed for noncommercial use only (PolyForm Noncommercial 1.0.0).\n\n"
             f"App folder: {self.script_dir}"), parent=self.root)
 
     # ======================================================================

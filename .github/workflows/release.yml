@@ -1,0 +1,43 @@
+name: Release package
+
+# Builds the one-download ZIP (app + double-click launchers).
+# - Every run uploads it as a workflow artifact.
+# - Pushing a tag like "v2.0" also publishes it on the Releases page.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check the app and launchers
+        run: |
+          python -m py_compile Voice_To_Text_Assistant.py tools/build_release.py
+          bash -n start-vtta.sh
+          bash -n "Start VTTA.command"
+
+      - name: Build ZIP
+        run: python tools/build_release.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VTTA-portable
+          path: dist/*.zip
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
